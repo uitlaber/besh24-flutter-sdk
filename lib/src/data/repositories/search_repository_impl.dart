@@ -24,6 +24,7 @@ class SearchRepositoryImpl implements SearchRepository {
     int? perPage,
     int? priceMin,
     int? priceMax,
+    String? lang,
   }) async {
     final res = await _remote.getSearch({
       'q': query,
@@ -37,6 +38,7 @@ class SearchRepositoryImpl implements SearchRepository {
       'per_page': perPage?.toString(),
       'price_min': priceMin?.toString(),
       'price_max': priceMax?.toString(),
+      'lang': lang,
     });
     return res.map((m) => m.toEntity());
   }
@@ -49,6 +51,7 @@ class SearchRepositoryImpl implements SearchRepository {
     String? anonymousId,
     String? userId,
     int? limit,
+    String? lang,
   }) async {
     final res = await _remote.getInstant({
       'q': query,
@@ -57,6 +60,7 @@ class SearchRepositoryImpl implements SearchRepository {
       'anonymous_id': anonymousId,
       'user_id': userId,
       'limit': limit?.toString(),
+      'lang': lang,
     });
     return res.map(
       (list) => list.map((m) => m.toEntity()).toList(growable: false),

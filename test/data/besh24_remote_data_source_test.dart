@@ -8,7 +8,10 @@ import '../support/fakes.dart';
 
 Besh24RemoteDataSource _ds(RecordingHttpClient http) => Besh24RemoteDataSource(
       http: http,
-      config: Besh24Config(baseUrl: 'https://x.test/api/v1'),
+      config: Besh24Config(
+        baseUrl: 'https://x.test/api/v1',
+        siteKey: 'bsk_test',
+      ),
     );
 
 void main() {
@@ -70,6 +73,28 @@ void main() {
       await _ds(http).getIdentity(anonymousId: 'A', sessionId: 'S');
 
       expect(http.last.headers?['Cookie'], 'besh24_aid=A; besh24_sid=S');
+    });
+
+    test('sends X-Besh24-Site-Key on every request', () async {
+      final http = RecordingHttpClient(
+        responder: (_) => const Ok(
+          Besh24HttpResponse(
+            statusCode: 200,
+            body: '{"items":["1"],"request_id":"r"}',
+          ),
+        ),
+      );
+
+      await _ds(http).getRecommendations({'city_id': '1'});
+      expect(http.last.headers?['X-Besh24-Site-Key'], 'bsk_test');
+
+      await _ds(http).getIdentity();
+      expect(http.last.headers?['X-Besh24-Site-Key'], 'bsk_test');
+
+      await _ds(http).postEvents([
+        {'event_id': 'e1', 'type': 'view'},
+      ]);
+      expect(http.last.headers?['X-Besh24-Site-Key'], 'bsk_test');
     });
 
     test('instant reads the products array', () async {

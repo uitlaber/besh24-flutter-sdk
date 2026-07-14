@@ -39,7 +39,10 @@ import 'domain/usecases/track_event_usecase.dart';
 /// Lifecycle:
 /// ```dart
 /// final client = Besh24Client();
-/// await client.init(Besh24Config(baseUrl: 'https://besh24.evrika.com/api/v1'));
+/// await client.init(Besh24Config(
+///   baseUrl: 'https://besh24.evrika.com/api/v1',
+///   siteKey: 'bsk_evrika_9f3c1a2b',
+/// ));
 /// await client.trackView('SKU-1');
 /// ```
 ///
@@ -357,6 +360,7 @@ class Besh24Client {
     int? perPage,
     int? priceMin,
     int? priceMax,
+    String? lang,
   }) {
     return _guard<SearchResult>(
       'search',
@@ -374,6 +378,7 @@ class Besh24Client {
           perPage: perPage,
           priceMin: priceMin,
           priceMax: priceMax,
+          lang: lang ?? _config!.lang,
         );
       },
       onError: () => const Ok(SearchResult(items: [], total: 0)),
@@ -386,6 +391,7 @@ class Besh24Client {
     String query, {
     String? cityId,
     int? limit,
+    String? lang,
   }) {
     return _guard<List<InstantSearchItem>>(
       'searchInstant',
@@ -398,6 +404,7 @@ class Besh24Client {
           source: source,
           userId: _userId,
           limit: limit,
+          lang: lang ?? _config!.lang,
         );
       },
       onError: () => const Ok<List<InstantSearchItem>>([]),

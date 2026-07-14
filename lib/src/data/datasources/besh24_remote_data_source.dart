@@ -30,15 +30,13 @@ class Besh24RemoteDataSource {
   final Besh24Config config;
   final Besh24Logger _logger;
 
-  static const _jsonHeaders = {'Content-Type': 'application/json'};
-
   /// `GET /identity`. When [config.sendCookies] is on and ids are supplied,
   /// resends them so the backend reuses the same identity.
   Future<Result<IdentityModel>> getIdentity({
     String? anonymousId,
     String? sessionId,
   }) async {
-    final headers = <String, String>{};
+    final headers = _headers();
     if (config.sendCookies) {
       final cookie = _cookieHeader(anonymousId, sessionId);
       if (cookie != null) headers['Cookie'] = cookie;
@@ -66,7 +64,7 @@ class Besh24RemoteDataSource {
   Future<Result<RecommendationResultModel>> getRecommendations(
     Map<String, String?> params,
   ) async {
-    final res = await _http.get(_uri('/recommendations', params));
+    final res = await _http.get(_uri('/recommendations', params), headers: _headers());
     return _decode(res, (json) => RecommendationResultModel.fromJson(json));
   }
 
@@ -74,7 +72,7 @@ class Besh24RemoteDataSource {
   Future<Result<SearchResultModel>> getSearch(
     Map<String, String?> params,
   ) async {
-    final res = await _http.get(_uri('/search', params));
+    final res = await _http.get(_uri('/search', params), headers: _headers());
     return _decode(res, (json) => SearchResultModel.fromJson(json));
   }
 
@@ -82,7 +80,7 @@ class Besh24RemoteDataSource {
   Future<Result<List<InstantSearchItemModel>>> getInstant(
     Map<String, String?> params,
   ) async {
-    final res = await _http.get(_uri('/search/instant', params));
+    final res = await _http.get(_uri('/search/instant', params), headers: _headers());
     return _decodeList(
       res,
       'products',
@@ -92,10 +90,17 @@ class Besh24RemoteDataSource {
 
   // --- internals ---------------------------------------------------------
 
+  /// Builds the headers sent on every request, always including the tenant
+  /// `X-Besh24-Site-Key`. Merges in [extra] (e.g. `Content-Type`).
+  Map<String, String> _headers([Map<String, String>? extra]) => {
+        'X-Besh24-Site-Key': config.siteKey,
+        ...?extra,
+      };
+
   Future<Result<void>> _postVoid(String path, Object body) async {
     final res = await _http.post(
       _uri(path),
-      headers: _jsonHeaders,
+      headers: _headers(const {'Content-Type': 'application/json'}),
       body: jsonEncode(body),
     );
     switch (res) {
