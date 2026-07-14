@@ -94,6 +94,7 @@ class Besh24Client {
   Identity? _identity;
   String? _userId;
   String? _cityId;
+  String? _lang;
 
   /// `true` once [init] has completed.
   bool get isInitialized => _config != null;
@@ -104,6 +105,24 @@ class Besh24Client {
 
   /// The current source label from [Besh24Config].
   String get source => _config!.source;
+
+  /// The current search language, updated at runtime via [setLang] and
+  /// defaulting to [Besh24Config.lang] until then.
+  String get lang => _lang ?? _config!.lang;
+
+  /// Changes the runtime default search language (`ru` or `kk`) used by
+  /// [search]/[searchInstant] when no per-call `lang` is given. Unsupported
+  /// values are ignored, leaving the previous value in place.
+  ///
+  /// ```dart
+  /// client.setLang('kk');
+  /// ```
+  void setLang(String lang) {
+    final trimmed = lang.trim().toLowerCase();
+    if (supportedLangs.contains(trimmed)) {
+      _lang = trimmed;
+    }
+  }
 
   /// Builds the dependency graph from [config] and bootstraps the identity.
   ///
@@ -378,7 +397,7 @@ class Besh24Client {
           perPage: perPage,
           priceMin: priceMin,
           priceMax: priceMax,
-          lang: lang ?? _config!.lang,
+          lang: lang ?? this.lang,
         );
       },
       onError: () => const Ok(SearchResult(items: [], total: 0)),
@@ -404,7 +423,7 @@ class Besh24Client {
           source: source,
           userId: _userId,
           limit: limit,
-          lang: lang ?? _config!.lang,
+          lang: lang ?? this.lang,
         );
       },
       onError: () => const Ok<List<InstantSearchItem>>([]),

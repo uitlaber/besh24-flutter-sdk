@@ -158,10 +158,38 @@ void main() {
       final (client, http, _) = await _client();
       await client.search('phone', cityId: '3', lang: 'kk');
 
-      final q = http.requests
-          .lastWhere((r) => r.url.path == '/api/v1/search')
-          .query;
+      final q =
+          http.requests.lastWhere((r) => r.url.path == '/api/v1/search').query;
       expect(q['lang'], 'kk');
+    });
+
+    test('setLang changes the runtime default lang', () async {
+      final (client, http, _) = await _client();
+      client.setLang('kk');
+      await client.search('phone', cityId: '3');
+
+      final q =
+          http.requests.lastWhere((r) => r.url.path == '/api/v1/search').query;
+      expect(q['lang'], 'kk');
+      expect(client.lang, 'kk');
+    });
+
+    test('an explicit lang override wins over setLang', () async {
+      final (client, http, _) = await _client();
+      client.setLang('kk');
+      await client.search('phone', cityId: '3', lang: 'ru');
+
+      final q =
+          http.requests.lastWhere((r) => r.url.path == '/api/v1/search').query;
+      expect(q['lang'], 'ru');
+    });
+
+    test('setLang ignores unsupported values', () async {
+      final (client, _, _) = await _client();
+      client.setLang('kk');
+      client.setLang('fr');
+
+      expect(client.lang, 'kk');
     });
 
     test('searchInstant requires city and parses products', () async {
