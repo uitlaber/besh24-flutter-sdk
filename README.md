@@ -41,8 +41,10 @@ final client = Besh24Client();
 await client.init(
   Besh24Config(
     baseUrl: 'https://besh24.evrika.com/api/v1', // must include /api/v1
+    siteKey: 'bsk_evrika_9f3c1a2b', // tenant key, sent as X-Besh24-Site-Key
     defaultCityId: '1',
     source: 'app', // free-form analytics label: 'app', 'ios', 'testweb', …
+    lang: 'ru', // search language: 'ru' | 'kk'
   ),
 );
 
@@ -93,8 +95,10 @@ event payload shapes.
 | `Besh24Config` field | Default | Purpose |
 | --- | --- | --- |
 | `baseUrl` | — (required) | Full API base incl. `/api/v1`. |
+| `siteKey` | — (required) | Tenant key, sent as `X-Besh24-Site-Key` on every request. |
 | `defaultCityId` | `'1'` | City used when a call omits `cityId`. |
 | `source` | `'app'` | Analytics channel stamped on every event/query. |
+| `lang` | `'ru'` | Search language (`ru`/`kk`), sent as `lang` on `search`/`searchInstant`; overridable per call. |
 | `timeout` | `10s` | Per-request network timeout. |
 | `sessionIdleTimeout` | `30m` | Idle window before the session id rotates. |
 | `sendCookies` | `true` | Resend `besh24_aid`/`besh24_sid` on `GET /identity`. |

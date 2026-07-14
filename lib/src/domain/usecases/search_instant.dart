@@ -19,6 +19,7 @@ class SearchInstant {
     required String source,
     String? userId,
     int? limit,
+    String? lang,
   }) {
     return _repository.instant(
       query: query,
@@ -27,6 +28,7 @@ class SearchInstant {
       anonymousId: identity.anonymousId,
       userId: userId,
       limit: limit,
+      lang: lang,
     );
   }
 }

@@ -46,7 +46,11 @@ Future<(Besh24Client, RecordingHttpClient, CapturingLogger)> _client({
     logger: logger,
   );
   await client.init(
-    Besh24Config(baseUrl: 'https://x.test/api/v1', source: source),
+    Besh24Config(
+      baseUrl: 'https://x.test/api/v1',
+      siteKey: 'bsk_test',
+      source: source,
+    ),
   );
   return (client, http, logger);
 }
@@ -138,13 +142,26 @@ void main() {
       final (client, http, _) = await _client();
       final res = await client.search('phone', cityId: '3');
 
-      final q =
-          http.requests.lastWhere((r) => r.url.path == '/api/v1/search').query;
+      final req =
+          http.requests.lastWhere((r) => r.url.path == '/api/v1/search');
+      final q = req.query;
       expect(q['q'], 'phone');
       expect(q['source'], 'app');
+      expect(q['lang'], 'ru');
+      expect(req.headers?['X-Besh24-Site-Key'], 'bsk_test');
       final value = (res as Ok).value;
       expect(value.total, 1);
       expect(value.items.single.id, '1');
+    });
+
+    test('search sends an explicit lang override', () async {
+      final (client, http, _) = await _client();
+      await client.search('phone', cityId: '3', lang: 'kk');
+
+      final q = http.requests
+          .lastWhere((r) => r.url.path == '/api/v1/search')
+          .query;
+      expect(q['lang'], 'kk');
     });
 
     test('searchInstant requires city and parses products', () async {

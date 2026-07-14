@@ -8,17 +8,24 @@ class Besh24Config {
   /// stripped) and [source] is sanitized (trimmed; empty falls back to `app`).
   Besh24Config({
     required String baseUrl,
+    required this.siteKey,
     this.shopKey,
     this.defaultCityId = '1',
     this.timeout = const Duration(seconds: 10),
     this.sessionIdleTimeout = const Duration(minutes: 30),
     this.sendCookies = true,
     String source = 'app',
+    String? lang,
   })  : baseUrl = _stripTrailingSlashes(baseUrl),
-        source = _sanitizeSource(source);
+        source = _sanitizeSource(source),
+        lang = _sanitizeLang(lang);
 
   /// Full API base URL including `/api/v1` (trailing slashes trimmed).
   final String baseUrl;
+
+  /// Tenant site key sent as `X-Besh24-Site-Key` on every request (mirrors the
+  /// web shim's `window.BESH24_SITE_KEY`), e.g. `bsk_evrika_9f3c1a2b`.
+  final String siteKey;
 
   /// Optional shop key forwarded to `init` (mirrors the shim's `shopKey`).
   final String? shopKey;
@@ -43,11 +50,21 @@ class Besh24Config {
   /// consumers may use any non-empty label (`ios`, `testweb`, …).
   final String source;
 
+  /// Search language (`ru` or `kk`) sent as the `lang` query parameter on
+  /// search/instant-search calls. Defaults to `ru`; per-call overrides are
+  /// supported by [Besh24Client.search]/[Besh24Client.searchInstant].
+  final String lang;
+
   static String _stripTrailingSlashes(String url) =>
       url.replaceFirst(RegExp(r'/+$'), '');
 
   static String _sanitizeSource(String source) {
     final trimmed = source.trim();
     return trimmed.isEmpty ? 'app' : trimmed;
+  }
+
+  static String _sanitizeLang(String? lang) {
+    final trimmed = lang?.trim() ?? '';
+    return trimmed.isEmpty ? 'ru' : trimmed;
   }
 }

@@ -23,6 +23,7 @@ class SearchUsecase {
     int? perPage,
     int? priceMin,
     int? priceMax,
+    String? lang,
   }) {
     return _repository.search(
       query: query,
@@ -36,6 +37,7 @@ class SearchUsecase {
       perPage: perPage,
       priceMin: priceMin,
       priceMax: priceMax,
+      lang: lang,
     );
   }
 }

@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.2.0 — 2026-07-14
+
+### Added
+- `Besh24Config.siteKey` (required): sent as `X-Besh24-Site-Key` on every
+  outbound request, resolving the multi-tenant contract on the public
+  `/api/v1/*` endpoints.
+- `Besh24Config.lang` (default `ru`): sent as the `lang` query parameter on
+  `search`/`searchInstant`. `Besh24Client.search`/`searchInstant` accept an
+  optional per-call `lang` override.
+
 ## 0.1.0 — 2026-07-14
 
 Initial release.
