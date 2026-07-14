@@ -1,3 +1,14 @@
+/// Search languages accepted by the backend.
+const supportedLangs = {'ru', 'kk'};
+
+/// Normalizes a language code to one of [supportedLangs], falling back to
+/// [fallback] for anything empty or unsupported. Shared by [Besh24Config]'s
+/// constructor and [Besh24Client.setLang].
+String sanitizeLang(String? lang, {String fallback = 'ru'}) {
+  final trimmed = lang?.trim().toLowerCase() ?? '';
+  return supportedLangs.contains(trimmed) ? trimmed : fallback;
+}
+
 /// Immutable configuration for [Besh24Client].
 ///
 /// [baseUrl] is the analogue of the web shim's `window.BESH24_API_BASE`: the
@@ -18,7 +29,7 @@ class Besh24Config {
     String? lang,
   })  : baseUrl = _stripTrailingSlashes(baseUrl),
         source = _sanitizeSource(source),
-        lang = _sanitizeLang(lang);
+        lang = sanitizeLang(lang);
 
   /// Full API base URL including `/api/v1` (trailing slashes trimmed).
   final String baseUrl;
@@ -61,10 +72,5 @@ class Besh24Config {
   static String _sanitizeSource(String source) {
     final trimmed = source.trim();
     return trimmed.isEmpty ? 'app' : trimmed;
-  }
-
-  static String _sanitizeLang(String? lang) {
-    final trimmed = lang?.trim() ?? '';
-    return trimmed.isEmpty ? 'ru' : trimmed;
   }
 }

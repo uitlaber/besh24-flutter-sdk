@@ -65,6 +65,10 @@ final ids = recs.valueOrNull?.itemIds ?? const [];
 final page = await client.search('телефон', cityId: '1');
 final instant = await client.searchInstant('теле', cityId: '1');
 
+// Switch the runtime default language when the user changes locale — no
+// per-call override needed afterwards.
+client.setLang('kk');
+
 // Profile + restock subscription.
 await client.setProfile(ProfileInput(email: 'a@b.c', gender: Gender.male));
 await client.subscribeRestock(
@@ -85,6 +89,7 @@ await client.subscribeRestock(
 | `search(query, …)` | `GET /search` | `query` → `q`. |
 | `searchInstant(query, cityId)` | `GET /search/instant` | `city_id` mandatory. |
 | `subscribeRestock(input)` | `POST /subscriptions/restock` | Requires email or phone. |
+| `setLang(lang)` | — | Changes the runtime default `lang` (`ru`/`kk`) used by `search`/`searchInstant` when no per-call override is given. Unsupported values are ignored. |
 
 See [`docs/contract-mapping.md`](docs/contract-mapping.md) for the full
 method → endpoint → payload table, and [`docs/events.md`](docs/events.md) for

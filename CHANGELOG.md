@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.3.0 — 2026-07-14
+
+### Added
+- `Besh24Client.setLang(String lang)`: changes the runtime default search
+  language (`ru`/`kk`) without re-creating the client. Unsupported values are
+  ignored. `Besh24Client.lang` exposes the current effective value. Per-call
+  `lang` overrides on `search`/`searchInstant` still take precedence.
+
 ## 0.2.0 — 2026-07-14
 
 ### Added
