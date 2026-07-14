@@ -1,0 +1,53 @@
+/// Immutable configuration for [Besh24Client].
+///
+/// [baseUrl] is the analogue of the web shim's `window.BESH24_API_BASE`: the
+/// full API base including the `/api/v1` prefix, e.g.
+/// `https://besh24.evrika.com/api/v1`.
+class Besh24Config {
+  /// Creates a configuration. [baseUrl] is sanitized (trailing slashes
+  /// stripped) and [source] is sanitized (trimmed; empty falls back to `app`).
+  Besh24Config({
+    required String baseUrl,
+    this.shopKey,
+    this.defaultCityId = '1',
+    this.timeout = const Duration(seconds: 10),
+    this.sessionIdleTimeout = const Duration(minutes: 30),
+    this.sendCookies = true,
+    String source = 'app',
+  })  : baseUrl = _stripTrailingSlashes(baseUrl),
+        source = _sanitizeSource(source);
+
+  /// Full API base URL including `/api/v1` (trailing slashes trimmed).
+  final String baseUrl;
+
+  /// Optional shop key forwarded to `init` (mirrors the shim's `shopKey`).
+  final String? shopKey;
+
+  /// City used when no explicit `city_id` is supplied to a call.
+  final String defaultCityId;
+
+  /// Per-request network timeout.
+  final Duration timeout;
+
+  /// Idle window after which a fresh session id is requested on the next
+  /// [Besh24Client.ensureIdentity]. Mirrors the backend's 30-minute rule.
+  final Duration sessionIdleTimeout;
+
+  /// When `true`, cached `besh24_aid`/`besh24_sid` are resent as a `Cookie`
+  /// header on `GET /identity` so the backend reuses the same identity across
+  /// launches (equivalent to the web shim's `credentials: 'include'`).
+  final bool sendCookies;
+
+  /// Free-form analytics source stamped into every event body and sent as the
+  /// `source` query parameter on recommend/search/instant. Defaults to `app`;
+  /// consumers may use any non-empty label (`ios`, `testweb`, …).
+  final String source;
+
+  static String _stripTrailingSlashes(String url) =>
+      url.replaceFirst(RegExp(r'/+$'), '');
+
+  static String _sanitizeSource(String source) {
+    final trimmed = source.trim();
+    return trimmed.isEmpty ? 'app' : trimmed;
+  }
+}

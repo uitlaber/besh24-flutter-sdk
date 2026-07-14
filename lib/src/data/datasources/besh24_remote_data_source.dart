@@ -1,0 +1,188 @@
+import 'dart:convert';
+
+import '../../core/config.dart';
+import '../../core/http/besh24_http_client.dart';
+import '../../core/logger.dart';
+import '../../core/result.dart';
+import '../models/identity_model.dart';
+import '../models/instant_search_item_model.dart';
+import '../models/recommendation_result_model.dart';
+import '../models/search_result_model.dart';
+
+/// Talks to the Besh24 HTTP API. Owns URL/query construction, status handling
+/// and JSON decoding; returns typed models wrapped in [Result].
+///
+/// Never throws: transport failures arrive as [NetworkError] from the
+/// [Besh24HttpClient], non-2xx as [ApiError], bad bodies as
+/// [SerializationError].
+class Besh24RemoteDataSource {
+  /// Creates the data source.
+  Besh24RemoteDataSource({
+    required Besh24HttpClient http,
+    required this.config,
+    Besh24Logger logger = const DefaultBesh24Logger(),
+  })  : _http = http,
+        _logger = logger;
+
+  final Besh24HttpClient _http;
+
+  /// Client configuration (base URL, cookie behaviour).
+  final Besh24Config config;
+  final Besh24Logger _logger;
+
+  static const _jsonHeaders = {'Content-Type': 'application/json'};
+
+  /// `GET /identity`. When [config.sendCookies] is on and ids are supplied,
+  /// resends them so the backend reuses the same identity.
+  Future<Result<IdentityModel>> getIdentity({
+    String? anonymousId,
+    String? sessionId,
+  }) async {
+    final headers = <String, String>{};
+    if (config.sendCookies) {
+      final cookie = _cookieHeader(anonymousId, sessionId);
+      if (cookie != null) headers['Cookie'] = cookie;
+    }
+    final res = await _http.get(_uri('/identity'), headers: headers);
+    return _decode(res, (json) => IdentityModel.fromJson(json));
+  }
+
+  /// `POST /events` (batch). Expects 202.
+  Future<Result<void>> postEvents(List<Map<String, Object?>> events) {
+    return _postVoid('/events', {'events': events});
+  }
+
+  /// `POST /profile`. Expects 200.
+  Future<Result<void>> postProfile(Map<String, Object?> body) {
+    return _postVoid('/profile', body);
+  }
+
+  /// `POST /subscriptions/restock`. Expects 201.
+  Future<Result<void>> postRestock(Map<String, Object?> body) {
+    return _postVoid('/subscriptions/restock', body);
+  }
+
+  /// `GET /recommendations`.
+  Future<Result<RecommendationResultModel>> getRecommendations(
+    Map<String, String?> params,
+  ) async {
+    final res = await _http.get(_uri('/recommendations', params));
+    return _decode(res, (json) => RecommendationResultModel.fromJson(json));
+  }
+
+  /// `GET /search`.
+  Future<Result<SearchResultModel>> getSearch(
+    Map<String, String?> params,
+  ) async {
+    final res = await _http.get(_uri('/search', params));
+    return _decode(res, (json) => SearchResultModel.fromJson(json));
+  }
+
+  /// `GET /search/instant`. Reads the `products` array.
+  Future<Result<List<InstantSearchItemModel>>> getInstant(
+    Map<String, String?> params,
+  ) async {
+    final res = await _http.get(_uri('/search/instant', params));
+    return _decodeList(
+      res,
+      'products',
+      (json) => InstantSearchItemModel.fromJson(json),
+    );
+  }
+
+  // --- internals ---------------------------------------------------------
+
+  Future<Result<void>> _postVoid(String path, Object body) async {
+    final res = await _http.post(
+      _uri(path),
+      headers: _jsonHeaders,
+      body: jsonEncode(body),
+    );
+    switch (res) {
+      case Ok<Besh24HttpResponse>(:final value):
+        if (value.isOk) return const Ok(null);
+        return Err(_apiError(value));
+      case Err<Besh24HttpResponse>(:final error):
+        return Err(error);
+    }
+  }
+
+  Uri _uri(String path, [Map<String, String?>? query]) {
+    final base = Uri.parse('${config.baseUrl}$path');
+    if (query == null) return base;
+    final params = <String, String>{};
+    query.forEach((k, v) {
+      if (v != null && v.isNotEmpty) params[k] = v;
+    });
+    return base.replace(
+      queryParameters: {...base.queryParameters, ...params},
+    );
+  }
+
+  String? _cookieHeader(String? anonymousId, String? sessionId) {
+    final parts = <String>[
+      if (anonymousId != null && anonymousId.isNotEmpty)
+        'besh24_aid=$anonymousId',
+      if (sessionId != null && sessionId.isNotEmpty) 'besh24_sid=$sessionId',
+    ];
+    return parts.isEmpty ? null : parts.join('; ');
+  }
+
+  ApiError _apiError(Besh24HttpResponse res) => ApiError(
+        'besh24 api ${res.statusCode}',
+        statusCode: res.statusCode,
+        body: res.body,
+      );
+
+  Result<T> _decode<T>(
+    Result<Besh24HttpResponse> res,
+    T Function(Map<String, Object?> json) build,
+  ) {
+    switch (res) {
+      case Ok<Besh24HttpResponse>(:final value):
+        if (!value.isOk) return Err(_apiError(value));
+        try {
+          final decoded = jsonDecode(value.body);
+          if (decoded is! Map) {
+            return const Err(SerializationError('expected a JSON object'));
+          }
+          return Ok(build(decoded.cast<String, Object?>()));
+        } catch (e) {
+          _logger.warn('failed to decode response', e);
+          return Err(SerializationError('failed to decode response', cause: e));
+        }
+      case Err<Besh24HttpResponse>(:final error):
+        return Err(error);
+    }
+  }
+
+  Result<List<T>> _decodeList<T>(
+    Result<Besh24HttpResponse> res,
+    String key,
+    T Function(Map<String, Object?> json) build,
+  ) {
+    switch (res) {
+      case Ok<Besh24HttpResponse>(:final value):
+        if (!value.isOk) return Err(_apiError(value));
+        try {
+          final decoded = jsonDecode(value.body);
+          if (decoded is! Map) {
+            return const Err(SerializationError('expected a JSON object'));
+          }
+          final raw = decoded[key];
+          final list = raw is List
+              ? raw
+                  .whereType<Map<String, dynamic>>()
+                  .map((e) => build(e.cast<String, Object?>()))
+                  .toList(growable: false)
+              : <T>[];
+          return Ok(list);
+        } catch (e) {
+          _logger.warn('failed to decode list response', e);
+          return Err(SerializationError('failed to decode response', cause: e));
+        }
+      case Err<Besh24HttpResponse>(:final error):
+        return Err(error);
+    }
+  }
+}
