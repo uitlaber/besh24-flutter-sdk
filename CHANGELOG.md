@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.4.0 — 2026-07-16
+
+### Added
+- `Besh24Client.registerPushToken({token, platform, userId})`: registers a
+  device FCM push token via `POST /push/tokens`. Idempotent upsert on the
+  backend, safe to call again (e.g. on `onTokenRefresh`). Returns `Err` on
+  failure, never throws.
+- `Besh24Client.unregisterPushToken(token)`: revokes a push token via
+  `DELETE /push/tokens`, e.g. on logout.
+- The SDK does **not** integrate Firebase — the host app obtains the token from
+  `FirebaseMessaging` and passes it through as a string. See the README's
+  "Push-уведомления (FCM)" section for the full flow.
+- `Besh24HttpClient.delete(...)`: new transport method backing the above
+  (implemented on `HttpBesh24HttpClient`; custom transports must add it).
+
 ## 0.3.0 — 2026-07-14
 
 ### Added

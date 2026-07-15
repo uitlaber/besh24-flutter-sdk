@@ -25,6 +25,7 @@ Result<Besh24HttpResponse> _route(
   final status = switch (path) {
     '/api/v1/events' => 202,
     '/api/v1/subscriptions/restock' => 201,
+    '/api/v1/push/tokens' when req.method == 'POST' => 201,
     _ => 200,
   };
   return Ok(Besh24HttpResponse(statusCode: status, body: body));
@@ -251,6 +252,52 @@ void main() {
         ),
         isFalse,
       );
+    });
+  });
+
+  group('push tokens', () {
+    test('registerPushToken posts token/platform/anonymousId', () async {
+      final (client, http, _) = await _client();
+      final res = await client.registerPushToken(
+        token: 'tok-1',
+        platform: 'android',
+      );
+
+      expect(res, isA<Ok<void>>());
+      final req =
+          http.requests.lastWhere((r) => r.url.path == '/api/v1/push/tokens');
+      expect(req.method, 'POST');
+      final body = jsonDecode(req.body!) as Map<String, Object?>;
+      expect(body['token'], 'tok-1');
+      expect(body['platform'], 'android');
+      expect(body['anonymousId'], 'srv-anon');
+    });
+
+    test('unregisterPushToken sends a DELETE with the token', () async {
+      final (client, http, _) = await _client();
+      final res = await client.unregisterPushToken('tok-1');
+
+      expect(res, isA<Ok<void>>());
+      final req =
+          http.requests.lastWhere((r) => r.url.path == '/api/v1/push/tokens');
+      expect(req.method, 'DELETE');
+      final body = jsonDecode(req.body!) as Map<String, Object?>;
+      expect(body['token'], 'tok-1');
+    });
+
+    test('a 500 on registerPushToken returns Err and does not throw', () async {
+      final (client, _, logger) = await _client(
+        overrides: {
+          '/api/v1/push/tokens':
+              const Ok(Besh24HttpResponse(statusCode: 500, body: 'boom')),
+        },
+      );
+      final res = await client.registerPushToken(
+        token: 'tok-1',
+        platform: 'android',
+      );
+      expect(res, isA<Err<void>>());
+      expect(logger.messages, isNotEmpty);
     });
   });
 

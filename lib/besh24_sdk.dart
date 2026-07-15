@@ -49,3 +49,4 @@ export 'src/domain/entities/search_result.dart'
 export 'src/domain/entities/instant_search_item.dart' show InstantSearchItem;
 export 'src/domain/entities/profile_input.dart' show ProfileInput, Gender;
 export 'src/domain/entities/restock_input.dart' show RestockInput;
+export 'src/domain/entities/push_token_input.dart' show PushTokenInput;

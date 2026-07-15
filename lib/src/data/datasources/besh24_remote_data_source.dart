@@ -60,11 +60,33 @@ class Besh24RemoteDataSource {
     return _postVoid('/subscriptions/restock', body);
   }
 
+  /// `POST /push/tokens`. Expects 201 (idempotent upsert).
+  Future<Result<void>> postPushToken(Map<String, Object?> body) {
+    return _postVoid('/push/tokens', body);
+  }
+
+  /// `DELETE /push/tokens`. Expects 200.
+  Future<Result<void>> deletePushToken(Map<String, Object?> body) async {
+    final res = await _http.delete(
+      _uri('/push/tokens'),
+      headers: _headers(const {'Content-Type': 'application/json'}),
+      body: jsonEncode(body),
+    );
+    switch (res) {
+      case Ok<Besh24HttpResponse>(:final value):
+        if (value.isOk) return const Ok(null);
+        return Err(_apiError(value));
+      case Err<Besh24HttpResponse>(:final error):
+        return Err(error);
+    }
+  }
+
   /// `GET /recommendations`.
   Future<Result<RecommendationResultModel>> getRecommendations(
     Map<String, String?> params,
   ) async {
-    final res = await _http.get(_uri('/recommendations', params), headers: _headers());
+    final res =
+        await _http.get(_uri('/recommendations', params), headers: _headers());
     return _decode(res, (json) => RecommendationResultModel.fromJson(json));
   }
 
@@ -80,7 +102,8 @@ class Besh24RemoteDataSource {
   Future<Result<List<InstantSearchItemModel>>> getInstant(
     Map<String, String?> params,
   ) async {
-    final res = await _http.get(_uri('/search/instant', params), headers: _headers());
+    final res =
+        await _http.get(_uri('/search/instant', params), headers: _headers());
     return _decodeList(
       res,
       'products',
