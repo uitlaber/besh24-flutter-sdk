@@ -11,6 +11,7 @@ import 'data/datasources/besh24_remote_data_source.dart';
 import 'data/datasources/identity_local_data_source.dart';
 import 'data/repositories/identity_repository_impl.dart';
 import 'data/repositories/profile_repository_impl.dart';
+import 'data/repositories/push_token_repository_impl.dart';
 import 'data/repositories/recommendation_repository_impl.dart';
 import 'data/repositories/search_repository_impl.dart';
 import 'data/repositories/subscription_repository_impl.dart';
@@ -18,17 +19,20 @@ import 'data/repositories/tracking_repository_impl.dart';
 import 'domain/entities/identity.dart';
 import 'domain/entities/instant_search_item.dart';
 import 'domain/entities/profile_input.dart';
+import 'domain/entities/push_token_input.dart';
 import 'domain/entities/recommendation_result.dart';
 import 'domain/entities/restock_input.dart';
 import 'domain/entities/search_result.dart';
 import 'domain/entities/track_event.dart';
 import 'domain/usecases/ensure_identity.dart';
 import 'domain/usecases/get_recommendations.dart';
+import 'domain/usecases/register_push_token.dart';
 import 'domain/usecases/search_instant.dart';
 import 'domain/usecases/search_usecase.dart';
 import 'domain/usecases/set_profile.dart';
 import 'domain/usecases/subscribe_restock.dart';
 import 'domain/usecases/track_event_usecase.dart';
+import 'domain/usecases/unregister_push_token.dart';
 
 /// The public entry point of the Besh24 mobile SDK.
 ///
@@ -89,6 +93,8 @@ class Besh24Client {
   late SearchUsecase _searchUseCase;
   late SearchInstant _instantUseCase;
   late SubscribeRestock _restockUseCase;
+  late RegisterPushToken _registerPushTokenUseCase;
+  late UnregisterPushToken _unregisterPushTokenUseCase;
 
   Future<Identity>? _identityFuture;
   Identity? _identity;
@@ -166,6 +172,9 @@ class Besh24Client {
     _restockUseCase = SubscribeRestock(
       SubscriptionRepositoryImpl(remote: remote, config: config),
     );
+    final pushTokenRepo = PushTokenRepositoryImpl(remote);
+    _registerPushTokenUseCase = RegisterPushToken(pushTokenRepo);
+    _unregisterPushTokenUseCase = UnregisterPushToken(pushTokenRepo);
 
     return ensureIdentity();
   }
@@ -438,6 +447,33 @@ class Besh24Client {
     return _guard('subscribeRestock', () async {
       final id = await ensureIdentity();
       return _restockUseCase.call(id, input);
+    });
+  }
+
+  // --- push tokens ---------------------------------------------------------
+
+  /// Registers a device push [token] obtained from `FirebaseMessaging` for
+  /// this identity. Idempotent — safe to call again on `onTokenRefresh`.
+  /// Returns `Err` on failure, never throws.
+  Future<Result<void>> registerPushToken({
+    required String token,
+    required String platform,
+    String? userId,
+  }) {
+    return _guard('registerPushToken', () async {
+      final id = await ensureIdentity();
+      return _registerPushTokenUseCase.call(
+        id,
+        PushTokenInput(token: token, platform: platform, userId: userId),
+      );
+    });
+  }
+
+  /// Revokes a previously registered push [token], e.g. on logout. Returns
+  /// `Err` on failure, never throws.
+  Future<Result<void>> unregisterPushToken(String token) {
+    return _guard('unregisterPushToken', () {
+      return _unregisterPushTokenUseCase.call(token);
     });
   }
 

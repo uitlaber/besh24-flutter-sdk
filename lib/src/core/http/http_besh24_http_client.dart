@@ -40,6 +40,15 @@ class HttpBesh24HttpClient implements Besh24HttpClient {
     return _send(() => _client.post(url, headers: headers, body: body));
   }
 
+  @override
+  Future<Result<Besh24HttpResponse>> delete(
+    Uri url, {
+    Map<String, String>? headers,
+    String? body,
+  }) {
+    return _send(() => _client.delete(url, headers: headers, body: body));
+  }
+
   Future<Result<Besh24HttpResponse>> _send(
     Future<http.Response> Function() run,
   ) async {

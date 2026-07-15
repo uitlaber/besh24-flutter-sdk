@@ -59,6 +59,22 @@ class RecordingHttpClient implements Besh24HttpClient {
   }
 
   @override
+  Future<Result<Besh24HttpResponse>> delete(
+    Uri url, {
+    Map<String, String>? headers,
+    String? body,
+  }) async {
+    return _respond(
+      RecordedRequest(
+        method: 'DELETE',
+        url: url,
+        headers: headers,
+        body: body,
+      ),
+    );
+  }
+
+  @override
   void close() {}
 }
 

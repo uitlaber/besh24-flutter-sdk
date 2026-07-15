@@ -97,6 +97,44 @@ void main() {
       expect(http.last.headers?['X-Besh24-Site-Key'], 'bsk_test');
     });
 
+    test('postPushToken posts a JSON body and expects 201', () async {
+      final http = RecordingHttpClient(
+        responder: (_) =>
+            const Ok(Besh24HttpResponse(statusCode: 201, body: '')),
+      );
+
+      final res = await _ds(http).postPushToken({
+        'token': 'tok-1',
+        'platform': 'android',
+        'anonymousId': 'anon',
+      });
+
+      expect(res, isA<Ok<void>>());
+      expect(http.last.method, 'POST');
+      expect(http.last.url.path, '/api/v1/push/tokens');
+      final body = jsonDecode(http.last.body!) as Map<String, Object?>;
+      expect(body['token'], 'tok-1');
+      expect(body['platform'], 'android');
+      expect(http.last.headers?['X-Besh24-Site-Key'], 'bsk_test');
+      expect(http.last.headers?['Content-Type'], 'application/json');
+    });
+
+    test('deletePushToken sends a DELETE with a JSON body', () async {
+      final http = RecordingHttpClient(
+        responder: (_) =>
+            const Ok(Besh24HttpResponse(statusCode: 200, body: '{"ok":true}')),
+      );
+
+      final res = await _ds(http).deletePushToken({'token': 'tok-1'});
+
+      expect(res, isA<Ok<void>>());
+      expect(http.last.method, 'DELETE');
+      expect(http.last.url.path, '/api/v1/push/tokens');
+      final body = jsonDecode(http.last.body!) as Map<String, Object?>;
+      expect(body['token'], 'tok-1');
+      expect(http.last.headers?['X-Besh24-Site-Key'], 'bsk_test');
+    });
+
     test('instant reads the products array', () async {
       final http = RecordingHttpClient(
         responder: (_) => const Ok(
@@ -147,6 +185,28 @@ void main() {
       );
 
       final res = await _ds(http).getRecommendations({'city_id': '1'});
+
+      expect((res as Err).error, isA<NetworkError>());
+    });
+
+    test('maps a 5xx on postPushToken to ApiError', () async {
+      final http = RecordingHttpClient(
+        responder: (_) =>
+            const Ok(Besh24HttpResponse(statusCode: 500, body: 'boom')),
+      );
+
+      final res = await _ds(http).postPushToken({'token': 'tok-1'});
+
+      expect((res as Err).error, isA<ApiError>());
+    });
+
+    test('passes a transport NetworkError through on deletePushToken',
+        () async {
+      final http = RecordingHttpClient(
+        responder: (_) => const Err(NetworkError('offline')),
+      );
+
+      final res = await _ds(http).deletePushToken({'token': 'tok-1'});
 
       expect((res as Err).error, isA<NetworkError>());
     });

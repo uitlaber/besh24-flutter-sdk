@@ -42,6 +42,13 @@ abstract interface class Besh24HttpClient {
     String? body,
   });
 
+  /// Performs a DELETE request with a JSON [body].
+  Future<Result<Besh24HttpResponse>> delete(
+    Uri url, {
+    Map<String, String>? headers,
+    String? body,
+  });
+
   /// Releases any underlying resources.
   void close();
 }

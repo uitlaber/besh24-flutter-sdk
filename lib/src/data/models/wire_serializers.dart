@@ -1,5 +1,6 @@
 import '../../domain/entities/identity.dart';
 import '../../domain/entities/profile_input.dart';
+import '../../domain/entities/push_token_input.dart';
 import '../../domain/entities/restock_input.dart';
 import '../../domain/entities/track_event.dart';
 
@@ -50,5 +51,18 @@ class WireSerializers {
         if (r.userId != null && r.userId!.isNotEmpty) 'user_id': r.userId,
         if (r.email != null && r.email!.isNotEmpty) 'email': r.email,
         if (r.phone != null && r.phone!.isNotEmpty) 'phone': r.phone,
+      };
+
+  /// `POST /api/v1/push/tokens` body. Uses the endpoint's own camelCase wire
+  /// shape (`anonymousId`/`userId`), unlike the snake_case bodies above.
+  static Map<String, Object?> pushToken(
+    Identity identity,
+    PushTokenInput p,
+  ) =>
+      {
+        'token': p.token,
+        'platform': p.platform,
+        'anonymousId': identity.anonymousId,
+        if (p.userId != null && p.userId!.isNotEmpty) 'userId': p.userId,
       };
 }

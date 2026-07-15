@@ -74,6 +74,10 @@ await client.setProfile(ProfileInput(email: 'a@b.c', gender: Gender.male));
 await client.subscribeRestock(
   const RestockInput(itemId: 'SKU-123', email: 'a@b.c'),
 );
+
+// Push token registration (see "Push-уведомления (FCM)" below for the flow).
+await client.registerPushToken(token: fcmToken, platform: 'android');
+await client.unregisterPushToken(fcmToken);
 ```
 
 ## Methods
@@ -90,6 +94,8 @@ await client.subscribeRestock(
 | `searchInstant(query, cityId)` | `GET /search/instant` | `city_id` mandatory. |
 | `subscribeRestock(input)` | `POST /subscriptions/restock` | Requires email or phone. |
 | `setLang(lang)` | — | Changes the runtime default `lang` (`ru`/`kk`) used by `search`/`searchInstant` when no per-call override is given. Unsupported values are ignored. |
+| `registerPushToken({token, platform, userId})` | `POST /push/tokens` | Idempotent upsert; safe to call again on `onTokenRefresh`. |
+| `unregisterPushToken(token)` | `DELETE /push/tokens` | Revokes a token, e.g. on logout. |
 
 See [`docs/contract-mapping.md`](docs/contract-mapping.md) for the full
 method → endpoint → payload table, and [`docs/events.md`](docs/events.md) for
@@ -107,6 +113,40 @@ event payload shapes.
 | `timeout` | `10s` | Per-request network timeout. |
 | `sessionIdleTimeout` | `30m` | Idle window before the session id rotates. |
 | `sendCookies` | `true` | Resend `besh24_aid`/`besh24_sid` on `GET /identity`. |
+
+## Push-уведомления (FCM)
+
+The SDK does **not** depend on `firebase_messaging` or integrate Firebase in
+any way — it only exposes the two backend calls that register/revoke a
+device's push token. Your app is responsible for obtaining the token from
+Firebase and feeding it to the SDK:
+
+```dart
+import 'package:firebase_messaging/firebase_messaging.dart';
+
+// 1. Get the current token from Firebase and register it with Besh24.
+final token = await FirebaseMessaging.instance.getToken();
+if (token != null) {
+  await client.registerPushToken(
+    token: token,
+    platform: 'android', // or 'ios'
+    userId: currentUserId, // optional, if the visitor is authenticated
+  );
+}
+
+// 2. Firebase rotates tokens occasionally — re-register on refresh.
+FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+  client.registerPushToken(token: newToken, platform: 'android');
+});
+
+// 3. On logout, revoke the token so the device stops receiving pushes tied
+//    to the previous visitor.
+await client.unregisterPushToken(token);
+```
+
+`registerPushToken` is an idempotent upsert on the backend, so calling it
+again with the same token (e.g. on every app start) is safe. Both calls
+follow the SDK's resilience contract — `Err` on failure, never throws.
 
 ## Why `package:http`?
 

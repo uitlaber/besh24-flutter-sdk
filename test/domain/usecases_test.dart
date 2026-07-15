@@ -1,11 +1,15 @@
 import 'package:besh24_sdk/src/core/result.dart';
 import 'package:besh24_sdk/src/domain/entities/identity.dart';
+import 'package:besh24_sdk/src/domain/entities/push_token_input.dart';
 import 'package:besh24_sdk/src/domain/entities/restock_input.dart';
 import 'package:besh24_sdk/src/domain/entities/track_event.dart';
+import 'package:besh24_sdk/src/domain/repositories/push_token_repository.dart';
 import 'package:besh24_sdk/src/domain/repositories/subscription_repository.dart';
 import 'package:besh24_sdk/src/domain/repositories/tracking_repository.dart';
+import 'package:besh24_sdk/src/domain/usecases/register_push_token.dart';
 import 'package:besh24_sdk/src/domain/usecases/subscribe_restock.dart';
 import 'package:besh24_sdk/src/domain/usecases/track_event_usecase.dart';
+import 'package:besh24_sdk/src/domain/usecases/unregister_push_token.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -16,12 +20,17 @@ class _MockTrackingRepository extends Mock implements TrackingRepository {}
 class _MockSubscriptionRepository extends Mock
     implements SubscriptionRepository {}
 
+class _MockPushTokenRepository extends Mock implements PushTokenRepository {}
+
 const _identity = Identity(anonymousId: 'anon-1', sessionId: 'sess-1');
 
 void main() {
   setUpAll(() {
     registerFallbackValue(_identity);
     registerFallbackValue(const RestockInput(itemId: 'x'));
+    registerFallbackValue(
+      const PushTokenInput(token: 'x', platform: 'android'),
+    );
   });
 
   group('TrackEventUsecase', () {
@@ -85,6 +94,56 @@ void main() {
 
       expect(result, isA<Ok<void>>());
       verify(() => repo.subscribeRestock(_identity, any())).called(1);
+    });
+  });
+
+  group('RegisterPushToken', () {
+    test('rejects an empty token without hitting the repository', () async {
+      final repo = _MockPushTokenRepository();
+      final result = await RegisterPushToken(repo).call(
+        _identity,
+        const PushTokenInput(token: '', platform: 'android'),
+      );
+
+      expect(result, isA<Err<void>>());
+      expect((result as Err).error, isA<ValidationError>());
+      verifyNever(() => repo.registerPushToken(any(), any()));
+    });
+
+    test('delegates when a token is present', () async {
+      final repo = _MockPushTokenRepository();
+      when(() => repo.registerPushToken(any(), any()))
+          .thenAnswer((_) async => const Ok(null));
+
+      final result = await RegisterPushToken(repo).call(
+        _identity,
+        const PushTokenInput(token: 'tok-1', platform: 'android'),
+      );
+
+      expect(result, isA<Ok<void>>());
+      verify(() => repo.registerPushToken(_identity, any())).called(1);
+    });
+  });
+
+  group('UnregisterPushToken', () {
+    test('rejects an empty token without hitting the repository', () async {
+      final repo = _MockPushTokenRepository();
+      final result = await UnregisterPushToken(repo).call('');
+
+      expect(result, isA<Err<void>>());
+      expect((result as Err).error, isA<ValidationError>());
+      verifyNever(() => repo.unregisterPushToken(any()));
+    });
+
+    test('delegates when a token is present', () async {
+      final repo = _MockPushTokenRepository();
+      when(() => repo.unregisterPushToken(any()))
+          .thenAnswer((_) async => const Ok(null));
+
+      final result = await UnregisterPushToken(repo).call('tok-1');
+
+      expect(result, isA<Ok<void>>());
+      verify(() => repo.unregisterPushToken('tok-1')).called(1);
     });
   });
 }
