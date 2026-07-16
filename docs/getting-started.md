@@ -24,7 +24,7 @@ final client = Besh24Client();
 
 await client.init(
   Besh24Config(
-    baseUrl: 'https://besh24.evrika.com/api/v1', // full URL incl. /api/v1
+    baseUrl: 'https://besh24.example.com/api/v1', // full URL incl. /api/v1
     defaultCityId: '1',
     source: 'app',
   ),

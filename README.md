@@ -40,8 +40,8 @@ final client = Besh24Client();
 
 await client.init(
   Besh24Config(
-    baseUrl: 'https://besh24.evrika.com/api/v1', // must include /api/v1
-    siteKey: 'bsk_evrika_9f3c1a2b', // tenant key, sent as X-Besh24-Site-Key
+    baseUrl: 'https://besh24.example.com/api/v1', // must include /api/v1
+    siteKey: 'bsk_demo_9f3c1a2b', // tenant key, sent as X-Besh24-Site-Key
     defaultCityId: '1',
     source: 'app', // free-form analytics label: 'app', 'ios', 'testweb', …
     lang: 'ru', // search language: 'ru' | 'kk'

@@ -2,7 +2,7 @@ import 'package:besh24_sdk/besh24_sdk.dart';
 import 'package:flutter/material.dart';
 
 /// Point this at your Besh24 API (must include the `/api/v1` prefix).
-const _baseUrl = 'https://besh24.evrika.com/api/v1';
+const _baseUrl = 'https://besh24.example.com/api/v1';
 
 void main() => runApp(const Besh24ExampleApp());
 
@@ -49,7 +49,7 @@ class _HomePageState extends State<_HomePage> {
   Future<void> _bootstrap() async {
     // 1) init → GET /identity → persisted anon/session id.
     final identity = await _client.init(
-      Besh24Config(baseUrl: _baseUrl, siteKey: 'bsk_evrika_9f3c1a2b', source: 'app'),
+      Besh24Config(baseUrl: _baseUrl, siteKey: 'bsk_demo_9f3c1a2b', source: 'app'),
     );
     _append(
         'init → anon=${identity.anonymousId} session=${identity.sessionId}');

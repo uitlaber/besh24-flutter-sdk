@@ -56,8 +56,8 @@ void main() {
 
     test('keeps the configured siteKey', () {
       final config =
-          Besh24Config(baseUrl: 'https://x.test', siteKey: 'bsk_evrika_9f3c1a2b');
-      expect(config.siteKey, 'bsk_evrika_9f3c1a2b');
+          Besh24Config(baseUrl: 'https://x.test', siteKey: 'bsk_demo_9f3c1a2b');
+      expect(config.siteKey, 'bsk_demo_9f3c1a2b');
     });
 
     test('defaults lang to "ru"', () {

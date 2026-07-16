@@ -44,8 +44,8 @@ import 'domain/usecases/unregister_push_token.dart';
 /// ```dart
 /// final client = Besh24Client();
 /// await client.init(Besh24Config(
-///   baseUrl: 'https://besh24.evrika.com/api/v1',
-///   siteKey: 'bsk_evrika_9f3c1a2b',
+///   baseUrl: 'https://besh24.example.com/api/v1',
+///   siteKey: 'bsk_demo_9f3c1a2b',
 /// ));
 /// await client.trackView('SKU-1');
 /// ```
