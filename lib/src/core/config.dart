@@ -13,7 +13,7 @@ String sanitizeLang(String? lang, {String fallback = 'ru'}) {
 ///
 /// [baseUrl] is the analogue of the web shim's `window.BESH24_API_BASE`: the
 /// full API base including the `/api/v1` prefix, e.g.
-/// `https://besh24.evrika.com/api/v1`.
+/// `https://besh24.example.com/api/v1`.
 class Besh24Config {
   /// Creates a configuration. [baseUrl] is sanitized (trailing slashes
   /// stripped) and [source] is sanitized (trimmed; empty falls back to `app`).
@@ -35,7 +35,7 @@ class Besh24Config {
   final String baseUrl;
 
   /// Tenant site key sent as `X-Besh24-Site-Key` on every request (mirrors the
-  /// web shim's `window.BESH24_SITE_KEY`), e.g. `bsk_evrika_9f3c1a2b`.
+  /// web shim's `window.BESH24_SITE_KEY`), e.g. `bsk_demo_9f3c1a2b`.
   final String siteKey;
 
   /// Optional shop key forwarded to `init` (mirrors the shim's `shopKey`).

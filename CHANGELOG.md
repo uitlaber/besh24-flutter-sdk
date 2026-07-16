@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.4.1 — 2026-07-16
+
+### Changed
+- Removed references to a specific client host/name from examples and docs
+  (README, getting-started guide, example app, doc comments); replaced with
+  the neutral `https://besh24.example.com` placeholder.
+
 ## 0.4.0 — 2026-07-16
 
 ### Added
