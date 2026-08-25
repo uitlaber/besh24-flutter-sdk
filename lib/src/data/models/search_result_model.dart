@@ -42,6 +42,88 @@ class SearchProductModel {
       SearchProduct(id: id, name: name, price: price, image: image, url: url);
 }
 
+/// Parses `facets.brand[]`.
+List<SearchBrandFacet> _parseBrandFacets(Object? raw) {
+  if (raw is! List) return const [];
+  return raw
+      .whereType<Map<Object?, Object?>>()
+      .map((e) => e.cast<String, Object?>())
+      .map(
+        (e) => SearchBrandFacet(
+          value: (e['value'] ?? '').toString(),
+          count: asInt(e['count']),
+        ),
+      )
+      .toList(growable: false);
+}
+
+/// Parses `facets.category[]`.
+List<SearchCategoryFacet> _parseCategoryFacets(Object? raw) {
+  if (raw is! List) return const [];
+  return raw
+      .whereType<Map<Object?, Object?>>()
+      .map((e) => e.cast<String, Object?>())
+      .map(
+        (e) => SearchCategoryFacet(
+          id: (e['id'] ?? '').toString(),
+          value: (e['value'] ?? '').toString(),
+          name: e['name'] as String?,
+          parent: e['parent'] as String?,
+          url: e['url'] as String?,
+          urlHandle: e['url_handle'] as String?,
+          count: asInt(e['count']),
+        ),
+      )
+      .toList(growable: false);
+}
+
+/// Parses `facets.price_ranges[]`.
+List<SearchPriceRangeBucket> _parsePriceRanges(Object? raw) {
+  if (raw is! List) return const [];
+  return raw
+      .whereType<Map<Object?, Object?>>()
+      .map((e) => e.cast<String, Object?>())
+      .map(
+        (e) => SearchPriceRangeBucket(
+          from: e['from'] == null ? null : asNum(e['from']),
+          to: e['to'] == null ? null : asNum(e['to']),
+          count: asInt(e['count']),
+        ),
+      )
+      .toList(growable: false);
+}
+
+/// Parses `facets.params[]`.
+List<SearchParamFacet> _parseParamFacets(Object? raw) {
+  if (raw is! List) return const [];
+  return raw
+      .whereType<Map<Object?, Object?>>()
+      .map((e) => e.cast<String, Object?>())
+      .map((e) {
+    final rawValues = e['values'];
+    final values = <String, int>{
+      if (rawValues is Map)
+        for (final entry in rawValues.entries)
+          entry.key.toString(): asInt(entry.value),
+    };
+    final ranges = e['ranges'];
+    num? rangeMin;
+    num? rangeMax;
+    if (ranges is Map) {
+      if (ranges['min'] != null) rangeMin = asNum(ranges['min']);
+      if (ranges['max'] != null) rangeMax = asNum(ranges['max']);
+    }
+    return SearchParamFacet(
+      name: (e['name'] ?? '').toString(),
+      count: asInt(e['count']),
+      priority: asInt(e['priority']),
+      values: values,
+      rangeMin: rangeMin,
+      rangeMax: rangeMax,
+    );
+  }).toList(growable: false);
+}
+
 /// Wire model for `GET /api/v1/search` → `{items, total, page, facets}`.
 class SearchResultModel {
   /// Creates a model.
@@ -50,6 +132,13 @@ class SearchResultModel {
     required this.total,
     required this.page,
     required this.facets,
+    required this.brandFacets,
+    required this.categoryFacets,
+    this.priceRangeMin,
+    this.priceRangeMax,
+    this.priceMedian,
+    required this.priceRanges,
+    required this.paramFacets,
   });
 
   /// Matched products.
@@ -64,6 +153,27 @@ class SearchResultModel {
   /// Raw facets map.
   final Map<String, Object?> facets;
 
+  /// Parsed `facets.brand`.
+  final List<SearchBrandFacet> brandFacets;
+
+  /// Parsed `facets.category`.
+  final List<SearchCategoryFacet> categoryFacets;
+
+  /// `facets.price_range.min`.
+  final num? priceRangeMin;
+
+  /// `facets.price_range.max`.
+  final num? priceRangeMax;
+
+  /// `facets.price_median`.
+  final num? priceMedian;
+
+  /// Parsed `facets.price_ranges`.
+  final List<SearchPriceRangeBucket> priceRanges;
+
+  /// Parsed `facets.params`.
+  final List<SearchParamFacet> paramFacets;
+
   /// Parses the response body.
   factory SearchResultModel.fromJson(Map<String, Object?> json) {
     final rawItems = json['items'];
@@ -73,12 +183,30 @@ class SearchResultModel {
             .map((e) => SearchProductModel.fromJson(e.cast<String, Object?>()))
             .toList(growable: false)
         : const <SearchProductModel>[];
-    final facets = json['facets'];
+    final rawFacets = json['facets'];
+    final facets = rawFacets is Map
+        ? rawFacets.cast<String, Object?>()
+        : const <String, Object?>{};
+    final priceRange = facets['price_range'];
+    num? priceRangeMin;
+    num? priceRangeMax;
+    if (priceRange is Map) {
+      if (priceRange['min'] != null) priceRangeMin = asNum(priceRange['min']);
+      if (priceRange['max'] != null) priceRangeMax = asNum(priceRange['max']);
+    }
     return SearchResultModel(
       items: items,
       total: asInt(json['total']),
       page: asInt(json['page'], fallback: 1),
-      facets: facets is Map ? facets.cast<String, Object?>() : const {},
+      facets: facets,
+      brandFacets: _parseBrandFacets(facets['brand']),
+      categoryFacets: _parseCategoryFacets(facets['category']),
+      priceRangeMin: priceRangeMin,
+      priceRangeMax: priceRangeMax,
+      priceMedian:
+          facets['price_median'] == null ? null : asNum(facets['price_median']),
+      priceRanges: _parsePriceRanges(facets['price_ranges']),
+      paramFacets: _parseParamFacets(facets['params']),
     );
   }
 
@@ -88,5 +216,12 @@ class SearchResultModel {
         total: total,
         page: page,
         facets: facets,
+        brandFacets: brandFacets,
+        categoryFacets: categoryFacets,
+        priceRangeMin: priceRangeMin,
+        priceRangeMax: priceRangeMax,
+        priceMedian: priceMedian,
+        priceRanges: priceRanges,
+        paramFacets: paramFacets,
       );
 }

@@ -154,6 +154,41 @@ void main() {
     });
   });
 
+  group('Besh24RemoteDataSource.getSearch paramFilters', () {
+    test('sends one filters[<name>] key per selected characteristic value',
+        () async {
+      final http = RecordingHttpClient();
+
+      await _ds(http).getSearch(
+        {'q': 'apple', 'city_id': '2'},
+        paramFilters: {
+          'Цвет': ['Белый', 'Чёрный'],
+          'Диагональ': ['3,6'],
+        },
+      );
+
+      final all = http.last.url.queryParametersAll;
+      expect(all['filters[Цвет]'], unorderedEquals(['Белый', 'Чёрный']));
+      expect(all['filters[Диагональ]'], ['3,6']);
+    });
+
+    test('omits characteristics whose values are all empty', () async {
+      final http = RecordingHttpClient();
+
+      await _ds(http).getSearch(
+        {'q': 'apple', 'city_id': '2'},
+        paramFilters: {
+          'Цвет': [''],
+        },
+      );
+
+      expect(
+        http.last.url.queryParametersAll.containsKey('filters[Цвет]'),
+        isFalse,
+      );
+    });
+  });
+
   group('Besh24RemoteDataSource error mapping', () {
     test('maps a 500 to ApiError', () async {
       final http = RecordingHttpClient(

@@ -4,6 +4,30 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.6.0 — 2026-08-25
+
+### Added
+- `SearchResult` gained typed facet fields, parsed from `GET /api/v1/search`'s
+  `facets`: `brandFacets` (`List<SearchBrandFacet>`), `categoryFacets`
+  (`List<SearchCategoryFacet>`, now id/parent/url-aware, not just a name),
+  `priceRangeMin`/`priceRangeMax`/`priceMedian`, `priceRanges`
+  (`List<SearchPriceRangeBucket>`), and `paramFacets`
+  (`List<SearchParamFacet>` — product characteristics with per-value counts,
+  optional priority and numeric range). The raw `facets` map is kept
+  unchanged as an escape hatch. New entities: `SearchBrandFacet`,
+  `SearchCategoryFacet`, `SearchPriceRangeBucket`, `SearchParamFacet`.
+- `Besh24Client.search(..., paramFilters: {...})`: narrows full-page search
+  by product characteristic (name → selected values, OR within one name,
+  AND across names), sent as repeated `filters[<name>]` query keys —
+  mirrors the backend's characteristic filter contract (Besh24-293). Use a
+  prior `SearchResult.paramFacets` entry's `name` as the key.
+
+### Changed
+- Re-verified against a live backend response that an empty `itemIds` from
+  `recommend`/`recommendBatch` remains a normal, successful result (no
+  server-side padding) — doc comments and `docs/contract-mapping.md` already
+  reflected this from 0.5.0; unchanged in this release.
+
 ## 0.5.0 — 2026-08-25
 
 ### Added

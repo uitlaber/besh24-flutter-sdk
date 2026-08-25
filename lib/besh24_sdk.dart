@@ -47,7 +47,13 @@ export 'src/domain/entities/recommendation_result.dart'
 export 'src/domain/entities/recommendation_batch.dart'
     show RecommendationBlockRequest, RecommendationBatchResult;
 export 'src/domain/entities/search_result.dart'
-    show SearchResult, SearchProduct;
+    show
+        SearchResult,
+        SearchProduct,
+        SearchBrandFacet,
+        SearchCategoryFacet,
+        SearchPriceRangeBucket,
+        SearchParamFacet;
 export 'src/domain/entities/instant_search_item.dart' show InstantSearchItem;
 export 'src/domain/entities/profile_input.dart' show ProfileInput, Gender;
 export 'src/domain/entities/restock_input.dart' show RestockInput;

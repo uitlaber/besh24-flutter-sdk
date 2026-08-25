@@ -81,6 +81,17 @@ final popularIds = batch.valueOrNull?.blocks['popular']?.itemIds ?? const [];
 final page = await client.search('телефон', cityId: '1', sort: 'price_asc');
 final instant = await client.searchInstant('теле', cityId: '1');
 
+// Facets on `page.valueOrNull` let the app render filter chips and narrow
+// the next search by product characteristic — brand/category filters use
+// `brand`/`category` above, not `paramFilters`.
+final colorFacets =
+    page.valueOrNull?.paramFacets.where((f) => f.name == 'Цвет');
+final narrowed = await client.search(
+  'телефон',
+  cityId: '1',
+  paramFilters: {'Цвет': ['Чёрный']},
+);
+
 // Switch the runtime default language when the user changes locale — no
 // per-call override needed afterwards.
 client.setLang('kk');
@@ -107,7 +118,7 @@ await client.unregisterPushToken(fcmToken);
 | `setProfile(input)` | `POST /profile` | Remembers `user_id`/`city_id`. |
 | `recommend(blockCode, …)` | `GET /recommendations` | `blockCode` → `besh24_block_id`. `extended: true` inlines catalog fields (price, availability, stock, ...) in `products`. |
 | `recommendBatch(blocks, …)` | `POST /recommendations/batch` | N blocks in one round trip; results keyed by block code. |
-| `search(query, …)` | `GET /search` | `query` → `q`. Accepts `sort` (`relevance`/`price_asc`/`price_desc`/`new`). |
+| `search(query, …)` | `GET /search` | `query` → `q`. Accepts `sort` (`relevance`/`price_asc`/`price_desc`/`new`) and `paramFilters` (product characteristic name → selected values) to narrow by facets from a prior `SearchResult.paramFacets`. |
 | `searchInstant(query, cityId)` | `GET /search/instant` | `city_id` mandatory. |
 | `subscribeRestock(input)` | `POST /subscriptions/restock` | Requires email or phone. |
 | `setLang(lang)` | — | Changes the runtime default `lang` (`ru`/`kk`) used by `search`/`searchInstant` when no per-call override is given. Unsupported values are ignored. |

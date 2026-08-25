@@ -152,6 +152,95 @@ void main() {
       expect(entity.items[1].price, 200);
       expect(entity.facets['brand'], isA<List<Object?>>());
     });
+
+    test('parses typed facets from a real backend response shape', () {
+      final model = SearchResultModel.fromJson({
+        'items': const [],
+        'total': 103,
+        'page': 1,
+        'facets': {
+          'brand': [
+            {'value': 'Apple', 'count': 103},
+          ],
+          'category': [
+            {
+              'id': '184',
+              'value': 'Чехлы',
+              'name': 'Чехлы',
+              'parent': 'Аксессуары для телефонов',
+              'url': 'https://back.evrika.com/catalog/chehly/c184',
+              'url_handle': 'chehly',
+              'count': 27,
+            },
+          ],
+          'price_range': {'min': 4990, 'max': 1067990},
+          'price_ranges': [
+            {'to': 100000, 'count': 54},
+            {'from': 100000, 'to': 250000, 'count': 14},
+            {'from': 1000000, 'count': 2},
+          ],
+          'price_median': 84490,
+          'params': [
+            {
+              'name': 'Wi-Fi',
+              'count': 30,
+              'priority': 1000,
+              'values': {'Wi-Fi 7': 12, '802.11ax': 6},
+            },
+            {
+              'name': 'Bluetooth',
+              'count': 8,
+              'priority': 993,
+              'values': {'5.3': 8},
+              'ranges': {'min': 5.3, 'max': 5.3},
+            },
+          ],
+        },
+      });
+      final entity = model.toEntity();
+
+      expect(entity.brandFacets, hasLength(1));
+      expect(entity.brandFacets.single.value, 'Apple');
+      expect(entity.brandFacets.single.count, 103);
+
+      expect(entity.categoryFacets.single.id, '184');
+      expect(entity.categoryFacets.single.parent, 'Аксессуары для телефонов');
+      expect(entity.categoryFacets.single.urlHandle, 'chehly');
+      expect(entity.categoryFacets.single.count, 27);
+
+      expect(entity.priceRangeMin, 4990);
+      expect(entity.priceRangeMax, 1067990);
+      expect(entity.priceMedian, 84490);
+      expect(entity.priceRanges, hasLength(3));
+      expect(entity.priceRanges.first.from, isNull);
+      expect(entity.priceRanges.first.to, 100000);
+      expect(entity.priceRanges.last.to, isNull);
+
+      expect(entity.paramFacets, hasLength(2));
+      final wifi = entity.paramFacets.first;
+      expect(wifi.name, 'Wi-Fi');
+      expect(wifi.priority, 1000);
+      expect(wifi.values, {'Wi-Fi 7': 12, '802.11ax': 6});
+      expect(wifi.rangeMin, isNull);
+      final bluetooth = entity.paramFacets.last;
+      expect(bluetooth.rangeMin, 5.3);
+      expect(bluetooth.rangeMax, 5.3);
+    });
+
+    test('defaults typed facets to empty when facets is missing/malformed', () {
+      final model = SearchResultModel.fromJson({
+        'items': const [],
+        'total': 0,
+        'page': 1,
+      });
+      final entity = model.toEntity();
+      expect(entity.brandFacets, isEmpty);
+      expect(entity.categoryFacets, isEmpty);
+      expect(entity.priceRanges, isEmpty);
+      expect(entity.paramFacets, isEmpty);
+      expect(entity.priceRangeMin, isNull);
+      expect(entity.priceMedian, isNull);
+    });
   });
 
   group('InstantSearchItemModel', () {

@@ -25,6 +25,7 @@ class SearchUsecase {
     int? priceMax,
     String? lang,
     String? sort,
+    Map<String, List<String>>? paramFilters,
   }) {
     return _repository.search(
       query: query,
@@ -40,6 +41,7 @@ class SearchUsecase {
       priceMax: priceMax,
       lang: lang,
       sort: sort,
+      paramFilters: paramFilters,
     );
   }
 }
