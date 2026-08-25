@@ -121,8 +121,24 @@ empty `RecommendationResult` rather than failing the whole batch.
 | `source` | `Besh24Config.source` |
 | `anonymous_id` / `user_id` | identity / profile |
 | `brand`, `category`, `page`, `per_page`, `price_min`, `price_max`, `sort` | optional args |
+| `filters[<name>]` (repeated key, one per selected value) | `paramFilters` — product characteristic name → selected values |
 
 `sort` is one of `relevance` (default), `price_asc`, `price_desc`, `new`.
+
+`filters[brand]`/`filters[category]`/`filters[price]` are a separate bracket
+form the backend also accepts for the same `brand`/`category`/`price_min`+
+`price_max` filters above; the SDK always sends the flat query params for
+those three, not the bracket form. Only free-form product characteristics
+(anything that isn't brand/category/price) go through `paramFilters` as
+`filters[<name>]`.
+
+`facets` in the response is richer than the raw map exposed for backward
+compatibility: `SearchResult` also parses `facets.brand`, `facets.category`,
+`facets.price_range`, `facets.price_median`, `facets.price_ranges` and
+`facets.params` (product characteristics with per-value counts) into typed
+fields — see `docs/api-reference.md`. Filtering results by picking a value
+out of `paramFacets` and re-searching with it in `paramFilters` is the
+supported discovery loop; there is no separate facet-listing endpoint.
 
 ## Instant search — `GET /search/instant`
 

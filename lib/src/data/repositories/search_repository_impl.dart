@@ -26,22 +26,26 @@ class SearchRepositoryImpl implements SearchRepository {
     int? priceMax,
     String? lang,
     String? sort,
+    Map<String, List<String>>? paramFilters,
   }) async {
-    final res = await _remote.getSearch({
-      'q': query,
-      'city_id': cityId,
-      'source': source,
-      'anonymous_id': anonymousId,
-      'user_id': userId,
-      'brand': brand,
-      'category': category,
-      'page': page?.toString(),
-      'per_page': perPage?.toString(),
-      'price_min': priceMin?.toString(),
-      'price_max': priceMax?.toString(),
-      'lang': lang,
-      'sort': sort,
-    });
+    final res = await _remote.getSearch(
+      {
+        'q': query,
+        'city_id': cityId,
+        'source': source,
+        'anonymous_id': anonymousId,
+        'user_id': userId,
+        'brand': brand,
+        'category': category,
+        'page': page?.toString(),
+        'per_page': perPage?.toString(),
+        'price_min': priceMin?.toString(),
+        'price_max': priceMax?.toString(),
+        'lang': lang,
+        'sort': sort,
+      },
+      paramFilters: paramFilters,
+    );
     return res.map((m) => m.toEntity());
   }
 

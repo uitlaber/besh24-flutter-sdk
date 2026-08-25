@@ -423,6 +423,12 @@ class Besh24Client {
 
   /// Full-page search for [query]. Degrades to an empty result on failure.
   /// [sort] is one of `relevance` (default), `price_asc`, `price_desc`, `new`.
+  ///
+  /// [paramFilters] narrows by product characteristics, e.g.
+  /// `{'Цвет': ['Белый', 'Чёрный']}` — values of one characteristic are
+  /// OR'd, different characteristics are AND'd. Use the [SearchResult]'s
+  /// `paramFacets` from a prior call to discover valid characteristic
+  /// names/values for the current query.
   Future<Result<SearchResult>> search(
     String query, {
     String? cityId,
@@ -434,6 +440,7 @@ class Besh24Client {
     int? priceMax,
     String? lang,
     String? sort,
+    Map<String, List<String>>? paramFilters,
   }) {
     return _guard<SearchResult>(
       'search',
@@ -453,6 +460,7 @@ class Besh24Client {
           priceMax: priceMax,
           lang: lang ?? this.lang,
           sort: sort,
+          paramFilters: paramFilters,
         );
       },
       onError: () => const Ok(SearchResult(items: [], total: 0)),

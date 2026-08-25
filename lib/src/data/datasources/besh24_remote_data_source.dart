@@ -105,10 +105,24 @@ class Besh24RemoteDataSource {
   }
 
   /// `GET /search`.
+  /// `GET /search`. [paramFilters] maps a product characteristic name to
+  /// its selected values, sent as repeated `filters[<name>]=v` query keys
+  /// (backend §4.4 — values within one characteristic are OR'd, different
+  /// characteristics are AND'd).
   Future<Result<SearchResultModel>> getSearch(
-    Map<String, String?> params,
-  ) async {
-    final res = await _http.get(_uri('/search', params), headers: _headers());
+    Map<String, String?> params, {
+    Map<String, List<String>>? paramFilters,
+  }) async {
+    final query = <String, Object?>{...params};
+    if (paramFilters != null) {
+      for (final entry in paramFilters.entries) {
+        final values =
+            entry.value.where((v) => v.isNotEmpty).toList(growable: false);
+        if (values.isEmpty) continue;
+        query['filters[${entry.key}]'] = values;
+      }
+    }
+    final res = await _http.get(_uri('/search', query), headers: _headers());
     return _decode(res, (json) => SearchResultModel.fromJson(json));
   }
 
@@ -149,12 +163,20 @@ class Besh24RemoteDataSource {
     }
   }
 
-  Uri _uri(String path, [Map<String, String?>? query]) {
+  /// Builds [path] with [query] appended. Values are either a `String`
+  /// (dropped if `null`/empty) or a `List<String>` (dropped if empty),
+  /// where a list encodes a repeated query key — e.g. `filters[Цвет]` sent
+  /// twice for two selected values.
+  Uri _uri(String path, [Map<String, Object?>? query]) {
     final base = Uri.parse('${config.baseUrl}$path');
     if (query == null) return base;
-    final params = <String, String>{};
+    final params = <String, Object>{};
     query.forEach((k, v) {
-      if (v != null && v.isNotEmpty) params[k] = v;
+      if (v is String) {
+        if (v.isNotEmpty) params[k] = v;
+      } else if (v is List<String>) {
+        if (v.isNotEmpty) params[k] = v;
+      }
     });
     return base.replace(
       queryParameters: {...base.queryParameters, ...params},
