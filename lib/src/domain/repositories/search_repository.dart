@@ -18,6 +18,7 @@ abstract interface class SearchRepository {
     int? priceMin,
     int? priceMax,
     String? lang,
+    String? sort,
   });
 
   /// Instant autocomplete. [cityId] is mandatory on the wire.

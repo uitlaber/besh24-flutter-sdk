@@ -81,13 +81,27 @@ class Besh24RemoteDataSource {
     }
   }
 
-  /// `GET /recommendations`.
+  /// `GET /recommendations`. Set `params['extended'] = 'true'` to receive
+  /// inline catalog fields in the response's `products` map.
   Future<Result<RecommendationResultModel>> getRecommendations(
     Map<String, String?> params,
   ) async {
     final res =
         await _http.get(_uri('/recommendations', params), headers: _headers());
     return _decode(res, (json) => RecommendationResultModel.fromJson(json));
+  }
+
+  /// `POST /recommendations/batch`. Expects a JSON object body (`request_id`,
+  /// `blocks`), decoded but not otherwise interpreted here.
+  Future<Result<Map<String, Object?>>> postRecommendationsBatch(
+    Map<String, Object?> body,
+  ) async {
+    final res = await _http.post(
+      _uri('/recommendations/batch'),
+      headers: _headers(const {'Content-Type': 'application/json'}),
+      body: jsonEncode(body),
+    );
+    return _decode(res, (json) => json);
   }
 
   /// `GET /search`.

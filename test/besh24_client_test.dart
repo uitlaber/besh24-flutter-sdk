@@ -16,6 +16,8 @@ Result<Besh24HttpResponse> _route(
   final body = switch (path) {
     '/api/v1/identity' => '{"anonymous_id":"srv-anon","session_id":"srv-sess"}',
     '/api/v1/recommendations' => '{"items":["1","2"],"request_id":"req-9"}',
+    '/api/v1/recommendations/batch' => '{"request_id":"req-batch","blocks":'
+        '{"popular":{"items":["1"]},"basket":{"items":["2","3"]}}}',
     '/api/v1/search' =>
       '{"items":[{"id":"1","name":"A","price":10}],"total":1,"page":1}',
     '/api/v1/search/instant' =>
@@ -139,6 +141,92 @@ void main() {
       expect((res as Ok).value.itemIds, ['1', '2']);
     });
 
+    test(
+        'recommend with extended=true sends extended=true and parses '
+        'the products map', () async {
+      const extendedBody = Besh24HttpResponse(
+        statusCode: 200,
+        body: '{"items":["1"],"request_id":"req-9","title":"Хиты",'
+            '"products":{"1":{"name":"Phone","price":100,"oldPrice":150,'
+            '"available":true,"fromDc":false,"stock":3}}}',
+      );
+      final (client, http, _) = await _client(
+        overrides: {'/api/v1/recommendations': const Ok(extendedBody)},
+      );
+      final res =
+          await client.recommend('popular', cityId: '2', extended: true);
+
+      final q = http.requests
+          .lastWhere((r) => r.url.path == '/api/v1/recommendations')
+          .query;
+      expect(q['extended'], 'true');
+      final value = (res as Ok).value;
+      expect(value.title, 'Хиты');
+      final product = value.products!['1']!;
+      expect(product.name, 'Phone');
+      expect(product.price, 100);
+      expect(product.oldPrice, 150);
+      expect(product.available, isTrue);
+      expect(product.stock, 3);
+    });
+
+    test(
+        'recommend without extended omits the extended param and leaves '
+        'products null', () async {
+      final (client, http, _) = await _client();
+      final res = await client.recommend('popular', cityId: '2');
+
+      final q = http.requests
+          .lastWhere((r) => r.url.path == '/api/v1/recommendations')
+          .query;
+      expect(q.containsKey('extended'), isFalse);
+      expect((res as Ok).value.products, isNull);
+    });
+
+    test('recommendBatch posts blocks/city_id and keys results by block_id',
+        () async {
+      final (client, http, _) = await _client();
+      final res = await client.recommendBatch(
+        const [
+          RecommendationBlockRequest(blockCode: 'popular'),
+          RecommendationBlockRequest(blockCode: 'basket', itemIds: ['a', 'b']),
+        ],
+        cityId: '2',
+      );
+
+      final body = _lastPostBody(http, '/api/v1/recommendations/batch');
+      final blocks = body['blocks'] as List;
+      expect(blocks, hasLength(2));
+      expect(blocks[0], {'block_id': 'popular'});
+      expect(blocks[1], {
+        'block_id': 'basket',
+        'item_ids': ['a', 'b'],
+      });
+      expect(body['city_id'], '2');
+
+      final value = (res as Ok).value;
+      expect(value.requestId, 'req-batch');
+      expect(value.blocks['popular']!.itemIds, ['1']);
+      expect(value.blocks['basket']!.itemIds, ['2', '3']);
+      // Batch blocks share the batch-level request id (no per-block id on
+      // the wire).
+      expect(value.blocks['popular']!.requestId, 'req-batch');
+    });
+
+    test('recommendBatch degrades to an empty batch on a 500', () async {
+      final (client, _, _) = await _client(
+        overrides: {
+          '/api/v1/recommendations/batch':
+              const Ok(Besh24HttpResponse(statusCode: 500, body: 'x')),
+        },
+      );
+      final res = await client.recommendBatch(
+        const [RecommendationBlockRequest(blockCode: 'popular')],
+        cityId: '2',
+      );
+      expect((res as Ok).value.blocks, isEmpty);
+    });
+
     test('search sends q + source and parses items/total', () async {
       final (client, http, _) = await _client();
       final res = await client.search('phone', cityId: '3');
@@ -153,6 +241,15 @@ void main() {
       final value = (res as Ok).value;
       expect(value.total, 1);
       expect(value.items.single.id, '1');
+    });
+
+    test('search forwards an explicit sort', () async {
+      final (client, http, _) = await _client();
+      await client.search('phone', cityId: '3', sort: 'price_asc');
+
+      final q =
+          http.requests.lastWhere((r) => r.url.path == '/api/v1/search').query;
+      expect(q['sort'], 'price_asc');
     });
 
     test('search sends an explicit lang override', () async {

@@ -24,6 +24,7 @@ class SearchUsecase {
     int? priceMin,
     int? priceMax,
     String? lang,
+    String? sort,
   }) {
     return _repository.search(
       query: query,
@@ -38,6 +39,7 @@ class SearchUsecase {
       priceMin: priceMin,
       priceMax: priceMax,
       lang: lang,
+      sort: sort,
     );
   }
 }

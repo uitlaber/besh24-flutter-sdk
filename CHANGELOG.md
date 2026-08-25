@@ -4,6 +4,34 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.5.0 — 2026-08-25
+
+### Added
+- `Besh24Client.recommend(..., extended: true)`: opts into the backend's
+  `extended` recommendations mode, inlining catalog fields (`price`,
+  `oldPrice`, `discountPercent`, `available`, `fromDc`, `stock`, `rating`,
+  `imageUrl`, ...) for every recommended product directly in the response's
+  `products` map — no second lookup call needed. Fields are city-aware,
+  resolved against the request's `city_id`. New entity
+  `RecommendationEnrichedItem`. `RecommendationResult` gained `title`, `url`
+  and `products` fields (all additive/optional).
+- `Besh24Client.recommendBatch(blocks, {cityId, extended})`: resolves N
+  recommendation blocks in a single `POST /recommendations/batch` round
+  trip instead of N calls to `recommend` — the path the web frontend already
+  uses for pages with several recommendation widgets. New entities
+  `RecommendationBlockRequest` and `RecommendationBatchResult`.
+- `Besh24Client.search(..., sort: ...)`: forwards the backend's `sort` query
+  param (`relevance` (default), `price_asc`, `price_desc`, `new`), previously
+  unreachable from the SDK.
+
+### Changed
+- Documented that an empty or short `itemIds`/`items` list from `recommend`,
+  `recommendBatch` or `search` is a normal, successful result — the backend
+  no longer pads recommendation blocks out to the requested limit. This was
+  already the SDK's runtime behavior (it never treated an empty list as an
+  error); this release makes the contract explicit in doc comments and
+  `docs/contract-mapping.md`.
+
 ## 0.4.1 — 2026-07-16
 
 ### Changed
