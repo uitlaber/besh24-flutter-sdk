@@ -43,7 +43,9 @@ export 'src/core/uuid_gen.dart' show UuidGenerator, UuidV4Generator;
 export 'src/domain/entities/identity.dart' show Identity;
 export 'src/domain/entities/track_event.dart' show TrackEventType;
 export 'src/domain/entities/recommendation_result.dart'
-    show RecommendationResult;
+    show RecommendationResult, RecommendationEnrichedItem;
+export 'src/domain/entities/recommendation_batch.dart'
+    show RecommendationBlockRequest, RecommendationBatchResult;
 export 'src/domain/entities/search_result.dart'
     show SearchResult, SearchProduct;
 export 'src/domain/entities/instant_search_item.dart' show InstantSearchItem;

@@ -73,8 +73,42 @@ ISO-8601).
 | `anonymous_id` | identity |
 | `user_id` | if set |
 | `item_id`, `category_id`, `brand`, `limit` | optional args |
+| `extended` | `extended` (default `false`) — see below |
 
 The backend maps `besh24_block_id` to its internal `block` algorithm.
+
+`extended: true` adds a `products` map (id → catalog fields: `name`, `nameKk`,
+`slug`, `url`, `imageUrl`, `brand`, `price`, `oldPrice`, `discountPercent`,
+`rating`, `badges`, `available`, `fromDc`, `stock`) to the response, resolved
+per the request's `city_id`. Parsed into `RecommendationResult.products`
+(`RecommendationEnrichedItem`). A product id in `itemIds` without a catalog
+entry is simply absent from the map.
+
+## Batch recommendations — `POST /recommendations/batch`
+
+`recommendBatch(blocks, …)` → `{request_id, blocks: {block_id: {...}}}`,
+parsed into `RecommendationBatchResult`. Resolves N blocks in one round trip
+instead of N calls to `recommend`. Body:
+
+```jsonc
+{
+  "blocks": [
+    {"block_id": "popular"},
+    {"block_id": "basket", "item_ids": ["a", "b"]}
+  ],
+  "city_id": "2",
+  "anonymous_id": "<from identity>",
+  "user_id": "…",     // if set
+  "source": "app",
+  "extended": false    // applies to the whole batch
+}
+```
+
+The backend issues one `request_id` for the whole batch — individual blocks
+do not get their own. The SDK copies it into every entry's
+`RecommendationResult.requestId` in `RecommendationBatchResult.blocks` for
+uniform impression attribution. A block that fails server-side resolves to an
+empty `RecommendationResult` rather than failing the whole batch.
 
 ## Search — `GET /search`
 
@@ -86,7 +120,9 @@ The backend maps `besh24_block_id` to its internal `block` algorithm.
 | `city_id` | resolved city |
 | `source` | `Besh24Config.source` |
 | `anonymous_id` / `user_id` | identity / profile |
-| `brand`, `category`, `page`, `per_page`, `price_min`, `price_max` | optional args |
+| `brand`, `category`, `page`, `per_page`, `price_min`, `price_max`, `sort` | optional args |
+
+`sort` is one of `relevance` (default), `price_asc`, `price_desc`, `new`.
 
 ## Instant search — `GET /search/instant`
 
@@ -127,6 +163,10 @@ request. Body:
 - Recommendations use **`besh24_block_id`** (external id, mapped server-side to
   `block`), matching the shim's `doRecommend`.
 - Instant search exposes **`products`**, not `items`.
+- A recommendation block (single or batch) may legitimately return an empty or
+  short `items`/`itemIds` list — the backend no longer pads results out to the
+  requested limit. This is a normal, successful (`Ok`) response, not an error;
+  do not treat `itemIds.isEmpty` as a failure signal.
 - `source` is an SDK addition (free-form analytics channel) sent on every event
   and on recommend/search/instant. The backend accepts it as an optional field
   (unknown keys are stripped by zod), so it is always safe to send.

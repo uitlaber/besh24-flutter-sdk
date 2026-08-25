@@ -2,7 +2,7 @@ name: besh24_sdk
 description: >-
   Besh24 mobile SDK — typed Dart/Flutter client for the Besh24 tracking,
   recommendations and search backend. Symmetric with the web JS shim.
-version: 0.4.1
+version: 0.5.0
 publish_to: none
 
 environment:

@@ -20,12 +20,14 @@ import 'domain/entities/identity.dart';
 import 'domain/entities/instant_search_item.dart';
 import 'domain/entities/profile_input.dart';
 import 'domain/entities/push_token_input.dart';
+import 'domain/entities/recommendation_batch.dart';
 import 'domain/entities/recommendation_result.dart';
 import 'domain/entities/restock_input.dart';
 import 'domain/entities/search_result.dart';
 import 'domain/entities/track_event.dart';
 import 'domain/usecases/ensure_identity.dart';
 import 'domain/usecases/get_recommendations.dart';
+import 'domain/usecases/get_recommendations_batch.dart';
 import 'domain/usecases/register_push_token.dart';
 import 'domain/usecases/search_instant.dart';
 import 'domain/usecases/search_usecase.dart';
@@ -90,6 +92,7 @@ class Besh24Client {
   late TrackEventUsecase _trackUseCase;
   late SetProfile _setProfileUseCase;
   late GetRecommendations _recommendUseCase;
+  late GetRecommendationsBatch _recommendBatchUseCase;
   late SearchUsecase _searchUseCase;
   late SearchInstant _instantUseCase;
   late SubscribeRestock _restockUseCase;
@@ -165,8 +168,9 @@ class Besh24Client {
       uuid: _uuid,
     );
     _setProfileUseCase = SetProfile(ProfileRepositoryImpl(remote));
-    _recommendUseCase =
-        GetRecommendations(RecommendationRepositoryImpl(remote));
+    final recommendationRepo = RecommendationRepositoryImpl(remote);
+    _recommendUseCase = GetRecommendations(recommendationRepo);
+    _recommendBatchUseCase = GetRecommendationsBatch(recommendationRepo);
     _searchUseCase = SearchUsecase(SearchRepositoryImpl(remote));
     _instantUseCase = SearchInstant(SearchRepositoryImpl(remote));
     _restockUseCase = SubscribeRestock(
@@ -346,6 +350,12 @@ class Besh24Client {
 
   /// Fetches a recommendation block by [blockCode] (sent as `besh24_block_id`).
   /// Degrades to an empty result on any failure.
+  ///
+  /// An empty [RecommendationResult.itemIds] in a successful (`Ok`) result is
+  /// normal — a block can legitimately have no candidates; it does not mean
+  /// the request failed. Set [extended] to receive inline catalog fields
+  /// (price, availability, stock, ...) in the result's `products` map,
+  /// avoiding a second lookup call.
   Future<Result<RecommendationResult>> recommend(
     String blockCode, {
     String? cityId,
@@ -353,6 +363,7 @@ class Besh24Client {
     String? categoryId,
     String? brand,
     int? limit,
+    bool extended = false,
   }) {
     return _guard<RecommendationResult>(
       'recommend:$blockCode',
@@ -368,6 +379,7 @@ class Besh24Client {
           categoryId: categoryId,
           brand: brand,
           limit: limit,
+          extended: extended,
         );
       },
       onError: () => const Ok(
@@ -376,9 +388,41 @@ class Besh24Client {
     );
   }
 
+  /// Resolves [blocks] in one round trip instead of N calls to [recommend] —
+  /// e.g. rendering a page with several recommendation widgets at once.
+  /// Degrades to an empty batch (no blocks) on any failure. [extended]
+  /// applies to every block in the batch.
+  ///
+  /// As with [recommend], an empty or short `itemIds` list on any block is
+  /// normal, not an error.
+  Future<Result<RecommendationBatchResult>> recommendBatch(
+    List<RecommendationBlockRequest> blocks, {
+    String? cityId,
+    bool extended = false,
+  }) {
+    return _guard<RecommendationBatchResult>(
+      'recommendBatch',
+      () async {
+        final id = await ensureIdentity();
+        return _recommendBatchUseCase.call(
+          blocks: blocks,
+          identity: id,
+          cityId: _resolveCity(cityId),
+          source: source,
+          userId: _userId,
+          extended: extended,
+        );
+      },
+      onError: () => const Ok(
+        RecommendationBatchResult(requestId: '', blocks: {}),
+      ),
+    );
+  }
+
   // --- search ------------------------------------------------------------
 
   /// Full-page search for [query]. Degrades to an empty result on failure.
+  /// [sort] is one of `relevance` (default), `price_asc`, `price_desc`, `new`.
   Future<Result<SearchResult>> search(
     String query, {
     String? cityId,
@@ -389,6 +433,7 @@ class Besh24Client {
     int? priceMin,
     int? priceMax,
     String? lang,
+    String? sort,
   }) {
     return _guard<SearchResult>(
       'search',
@@ -407,6 +452,7 @@ class Besh24Client {
           priceMin: priceMin,
           priceMax: priceMax,
           lang: lang ?? this.lang,
+          sort: sort,
         );
       },
       onError: () => const Ok(SearchResult(items: [], total: 0)),

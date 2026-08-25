@@ -25,6 +25,7 @@ class SearchRepositoryImpl implements SearchRepository {
     int? priceMin,
     int? priceMax,
     String? lang,
+    String? sort,
   }) async {
     final res = await _remote.getSearch({
       'q': query,
@@ -39,6 +40,7 @@ class SearchRepositoryImpl implements SearchRepository {
       'price_min': priceMin?.toString(),
       'price_max': priceMax?.toString(),
       'lang': lang,
+      'sort': sort,
     });
     return res.map((m) => m.toEntity());
   }

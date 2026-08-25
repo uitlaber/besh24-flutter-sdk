@@ -21,6 +21,7 @@ class GetRecommendations {
     String? categoryId,
     String? brand,
     int? limit,
+    bool extended = false,
   }) {
     return _repository.recommend(
       blockCode: blockCode,
@@ -32,6 +33,7 @@ class GetRecommendations {
       categoryId: categoryId,
       brand: brand,
       limit: limit,
+      extended: extended,
     );
   }
 }

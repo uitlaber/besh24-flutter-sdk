@@ -23,9 +23,10 @@ Internal layers (`src/data`, `src/domain/usecases`, …) are not exported.
 | `trackPurchase` | `Future<Result<void>> trackPurchase({required String orderId, required num total, required List<PurchaseItem> products, String? phone, String? cityId})` | Completed purchase. |
 | `trackSearch` | `Future<Result<void>> trackSearch(String query, int resultsCount, {String? cityId})` | Search event. |
 | `setProfile` | `Future<Result<void>> setProfile(ProfileInput input)` | Upserts the profile; remembers `user_id`/`city_id`. |
-| `recommend` | `Future<Result<RecommendationResult>> recommend(String blockCode, {String? cityId, String? itemId, String? categoryId, String? brand, int? limit})` | Recommendation block. |
-| `search` | `Future<Result<SearchResult>> search(String query, {String? cityId, String? brand, String? category, int? page, int? perPage, int? priceMin, int? priceMax})` | Full-page search. |
-| `searchInstant` | `Future<Result<List<InstantSearchItem>>> searchInstant(String query, {String? cityId, int? limit})` | Autocomplete. |
+| `recommend` | `Future<Result<RecommendationResult>> recommend(String blockCode, {String? cityId, String? itemId, String? categoryId, String? brand, int? limit, bool extended = false})` | Recommendation block. `extended: true` inlines catalog fields in `products`. |
+| `recommendBatch` | `Future<Result<RecommendationBatchResult>> recommendBatch(List<RecommendationBlockRequest> blocks, {String? cityId, bool extended = false})` | N recommendation blocks in one round trip. |
+| `search` | `Future<Result<SearchResult>> search(String query, {String? cityId, String? brand, String? category, int? page, int? perPage, int? priceMin, int? priceMax, String? lang, String? sort})` | Full-page search. |
+| `searchInstant` | `Future<Result<List<InstantSearchItem>>> searchInstant(String query, {String? cityId, int? limit, String? lang})` | Autocomplete. |
 | `subscribeRestock` | `Future<Result<void>> subscribeRestock(RestockInput input)` | Restock subscription (needs a contact). |
 | `dispose` | `void dispose()` | Closes the owned HTTP client. |
 
@@ -40,7 +41,10 @@ Internal layers (`src/data`, `src/domain/usecases`, …) are not exported.
 ## Entities
 
 - `Identity { anonymousId, sessionId }`
-- `RecommendationResult { itemIds: List<String>, requestId }`
+- `RecommendationResult { itemIds: List<String>, requestId, title?, url?, products?: Map<String, RecommendationEnrichedItem> }` — `products` present only when `extended: true` was requested.
+- `RecommendationEnrichedItem { id, name, nameKk?, slug?, url?, imageUrl?, brand?, price, oldPrice?, discountPercent?, rating?, badges?, available, fromDc, stock? }`
+- `RecommendationBlockRequest { blockCode, itemId?, categoryId?, brand?, itemIds?, categoryIds? }`
+- `RecommendationBatchResult { requestId, blocks: Map<String, RecommendationResult> }` — keyed by `blockCode`; every entry's `requestId` is the batch-level id.
 - `SearchResult { items: List<SearchProduct>, total, page, facets }`
 - `SearchProduct { id, name, price, image?, url? }`
 - `InstantSearchItem { id, name, price, image?, url? }`
