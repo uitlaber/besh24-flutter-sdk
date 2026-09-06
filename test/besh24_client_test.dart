@@ -123,6 +123,45 @@ void main() {
       expect((payload['products'] as List).length, 2);
       expect(payload['phone'], '+7700');
     });
+
+    test('trackRecommendationClick sends block + item_id', () async {
+      final (client, http, _) = await _client();
+      final res = await client.trackRecommendationClick(
+        block: '5c1a2b3c9f',
+        itemId: '42',
+        cityId: '7',
+      );
+
+      expect(res, isA<Ok<void>>());
+      final ev = (_lastPostBody(http, '/api/v1/events')['events'] as List)
+          .single as Map<String, Object?>;
+      expect(ev['type'], 'recommendation_click');
+      expect(ev['city_id'], '7');
+      expect(ev['payload'], {'block': '5c1a2b3c9f', 'item_id': '42'});
+    });
+
+    test('trackRecommendationClick rejects empty block/item without a request',
+        () async {
+      final (client, http, _) = await _client();
+
+      for (final args in const [
+        ('', '42'),
+        ('block', ''),
+        ('   ', '42'),
+        ('block', '   '),
+      ]) {
+        final res = await client.trackRecommendationClick(
+          block: args.$1,
+          itemId: args.$2,
+        );
+        expect((res as Err).error, isA<ValidationError>());
+      }
+
+      expect(
+        http.requests.any((r) => r.url.path == '/api/v1/events'),
+        isFalse,
+      );
+    });
   });
 
   group('recommend / search / instant', () {

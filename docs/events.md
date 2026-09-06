@@ -105,6 +105,24 @@ await client.trackSearch('телефон', 42);
 > server-side analytics; `trackSearch` is for cases where you render results
 > yourself and want to record the interaction explicitly.
 
+## `recommendation_click`
+
+A click on a product rendered inside a recommendation block. Feeds the block's
+own click statistics, so `block` must be the same identifier passed to
+`recommend` and `itemId` the product exactly as it came back in that block.
+
+```dart
+await client.trackRecommendationClick(block: 'popular', itemId: 'SKU-123');
+```
+
+```json
+{ "block": "popular", "item_id": "SKU-123" }
+```
+
+> Both fields are required. An empty (or blank) `block`/`itemId` returns
+> `Err(ValidationError)` without a request — a click on an unmarked card must
+> not produce wire noise.
+
 ## Resilience
 
 Tracking is fire-and-forget. On any failure the call returns `Err` and logs via

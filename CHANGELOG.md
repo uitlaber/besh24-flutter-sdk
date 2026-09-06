@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.7.0 — 2026-09-06
+
+### Added
+- `Besh24Client.trackRecommendationClick({block, itemId, cityId})` and the
+  `recommendation_click` event type — a click on a product inside a
+  recommendation block, feeding the block's click statistics. `block` is the
+  identifier passed to `recommend`, `item_id` the clicked product. An empty or
+  blank `block`/`itemId` returns `Err(ValidationError)` without a request,
+  mirroring the web shim.
+
 ## 0.6.0 — 2026-08-25
 
 ### Added

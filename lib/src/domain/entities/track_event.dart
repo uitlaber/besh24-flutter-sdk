@@ -25,7 +25,10 @@ enum TrackEventType {
   purchase,
 
   /// Search performed.
-  search;
+  search,
+
+  /// Click on a product inside a recommendation block.
+  recommendationClick;
 
   /// The wire value sent in the event `type` field (snake_case).
   String get wire => switch (this) {
@@ -37,6 +40,7 @@ enum TrackEventType {
         TrackEventType.removeWish => 'remove_wish',
         TrackEventType.purchase => 'purchase',
         TrackEventType.search => 'search',
+        TrackEventType.recommendationClick => 'recommendation_click',
       };
 
   /// Parses a wire [value] into a [TrackEventType], or `null` if unknown.
