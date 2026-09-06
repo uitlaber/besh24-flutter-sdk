@@ -322,6 +322,42 @@ class Besh24Client {
     );
   }
 
+  /// Tracks a click on a product inside a recommendation block — the signal
+  /// behind the block's own click-through statistics.
+  ///
+  /// [block] is the same block identifier passed to [recommend], [itemId] the
+  /// clicked product exactly as it came back in the block's result. Both are
+  /// required: an empty [block] or [itemId] is rejected locally with a
+  /// [ValidationError] and no request is sent, mirroring the web shim — a
+  /// click on an unmarked card must not produce wire noise.
+  ///
+  /// ```dart
+  /// await client.trackRecommendationClick(block: 'popular', itemId: 'SKU-1');
+  /// ```
+  Future<Result<void>> trackRecommendationClick({
+    required String block,
+    required String itemId,
+    String? cityId,
+  }) {
+    _assertInitialized();
+    final trimmedBlock = block.trim();
+    final trimmedItemId = itemId.trim();
+    if (trimmedBlock.isEmpty || trimmedItemId.isEmpty) {
+      return Future.value(
+        const Err(
+          ValidationError(
+            'recommendation click requires a block and an item id',
+          ),
+        ),
+      );
+    }
+    return track(
+      TrackEventType.recommendationClick,
+      {'block': trimmedBlock, 'item_id': trimmedItemId},
+      cityId: cityId,
+    );
+  }
+
   Map<String, Object?> _cartPayload(String itemId, num? amount, num? price) => {
         'item_id': itemId,
         if (amount != null) 'amount': amount,

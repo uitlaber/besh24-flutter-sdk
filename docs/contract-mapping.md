@@ -39,6 +39,7 @@ Batch body: `{ "events": [ <event> ] }` → **202**. Every event object:
 | `trackRemoveWish(id)` | `remove_wish` | `track remove_wish` | `{item_id}` |
 | `trackPurchase(...)` | `purchase` | `track purchase` | `{order_id, total, products:[{id,price,amount}], phone?}` |
 | `trackSearch(q, n)` | `search` | (server-emitted on web) | `{query, results_count}` |
+| `trackRecommendationClick({block, itemId})` | `recommendation_click` | `track recommendation_click` | `{block, item_id}` |
 
 See [`events.md`](events.md) for payload details.
 

@@ -115,6 +115,7 @@ await client.unregisterPushToken(fcmToken);
 | `ensureIdentity()` | `GET /identity` | Cached; runs at most once per instance. |
 | `track(type, payload)` | `POST /events` | Generic; prefer the typed shortcuts. |
 | `trackView` / `trackCategory` / `trackCart` / `trackRemoveFromCart` / `trackWish` / `trackRemoveWish` / `trackPurchase` / `trackSearch` | `POST /events` | Typed event helpers. |
+| `trackRecommendationClick({block, itemId})` | `POST /events` | Click on a product inside a recommendation block; empty `block`/`itemId` is rejected locally. |
 | `setProfile(input)` | `POST /profile` | Remembers `user_id`/`city_id`. |
 | `recommend(blockCode, …)` | `GET /recommendations` | `blockCode` → `besh24_block_id`. `extended: true` inlines catalog fields (price, availability, stock, ...) in `products`. |
 | `recommendBatch(blocks, …)` | `POST /recommendations/batch` | N blocks in one round trip; results keyed by block code. |
