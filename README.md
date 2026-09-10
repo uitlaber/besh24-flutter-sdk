@@ -116,6 +116,9 @@ await client.unregisterPushToken(fcmToken);
 | `track(type, payload)` | `POST /events` | Generic; prefer the typed shortcuts. |
 | `trackView` / `trackCategory` / `trackCart` / `trackRemoveFromCart` / `trackWish` / `trackRemoveWish` / `trackPurchase` / `trackSearch` | `POST /events` | Typed event helpers. |
 | `trackRecommendationClick({block, itemId})` | `POST /events` | Click on a product inside a recommendation block; empty `block`/`itemId` is rejected locally. |
+| `trackVisit()` | `POST /events` | Session start; no payload. |
+| `trackPageOpen(path)` | `POST /events` | Opened a page. `path` has any query string/hash stripped locally; a path that's empty after stripping is rejected locally. |
+| `trackReview(itemId, {rating})` | `POST /events` | Left a review. `rating` must be `1`..`5`; an out-of-range value is dropped from the payload but the event is still sent. |
 | `setProfile(input)` | `POST /profile` | Remembers `user_id`/`city_id`. |
 | `recommend(blockCode, …)` | `GET /recommendations` | `blockCode` → `besh24_block_id`. `extended: true` inlines catalog fields (price, availability, stock, ...) in `products`. |
 | `recommendBatch(blocks, …)` | `POST /recommendations/batch` | N blocks in one round trip; results keyed by block code. |

@@ -40,6 +40,9 @@ Batch body: `{ "events": [ <event> ] }` → **202**. Every event object:
 | `trackPurchase(...)` | `purchase` | `track purchase` | `{order_id, total, products:[{id,price,amount}], phone?}` |
 | `trackSearch(q, n)` | `search` | (server-emitted on web) | `{query, results_count}` |
 | `trackRecommendationClick({block, itemId})` | `recommendation_click` | `track recommendation_click` | `{block, item_id}` |
+| `trackVisit()` | `visit` | `track visit` | `{}` |
+| `trackPageOpen(path)` | `page_open` | `track page_open` | `{path}` (query/hash stripped locally) |
+| `trackReview(id, {rating})` | `review` | `track review` | `{item_id, rating?}` (out-of-range `rating` dropped, not the event) |
 
 See [`events.md`](events.md) for payload details.
 
