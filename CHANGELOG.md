@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.8.0 — 2026-09-10
+
+### Added
+- Three tracking events added by the S2 contract change: `visit`, `page_open`,
+  `review`.
+  - `Besh24Client.trackVisit({cityId})` — session start, empty payload.
+  - `Besh24Client.trackPageOpen(path, {cityId})` — opened a page. `path` has
+    any query string/hash stripped locally before sending; if the result is
+    empty, returns `Err(ValidationError)` without a request, mirroring the
+    server's own rejection rule.
+  - `Besh24Client.trackReview(itemId, {rating, cityId})` — left a review.
+    `rating` must be `1`..`5`; an out-of-range value is dropped from the
+    payload but the event is still sent, matching the web shim's behavior.
+
 ## 0.7.0 — 2026-09-06
 
 ### Added

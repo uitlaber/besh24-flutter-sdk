@@ -28,7 +28,16 @@ enum TrackEventType {
   search,
 
   /// Click on a product inside a recommendation block.
-  recommendationClick;
+  recommendationClick,
+
+  /// Landed on the site (session start). No product/page context.
+  visit,
+
+  /// Opened a page, identified by its path.
+  pageOpen,
+
+  /// Left a review for a product.
+  review;
 
   /// The wire value sent in the event `type` field (snake_case).
   String get wire => switch (this) {
@@ -41,6 +50,9 @@ enum TrackEventType {
         TrackEventType.purchase => 'purchase',
         TrackEventType.search => 'search',
         TrackEventType.recommendationClick => 'recommendation_click',
+        TrackEventType.visit => 'visit',
+        TrackEventType.pageOpen => 'page_open',
+        TrackEventType.review => 'review',
       };
 
   /// Parses a wire [value] into a [TrackEventType], or `null` if unknown.

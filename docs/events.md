@@ -123,6 +123,52 @@ await client.trackRecommendationClick(block: 'popular', itemId: 'SKU-123');
 > `Err(ValidationError)` without a request — a click on an unmarked card must
 > not produce wire noise.
 
+## `visit`
+
+Landed on the site (session start). Not about a product or a page — the base
+event fields (`anonymous_id`/`session_id`/`ts`/`source`) already carry
+everything meaningful, so the payload is empty.
+
+```dart
+await client.trackVisit();
+```
+
+```json
+{}
+```
+
+## `page_open`
+
+Opened a page, identified by its path. The server strips any query string and
+hash from `path` and rejects the event if nothing is left afterwards; the SDK
+does the same normalization locally and returns `Err(ValidationError)` without
+a request when the result would be empty — a path like `'?ref=x'` never
+reaches the wire.
+
+```dart
+await client.trackPageOpen('/catalog/42');
+```
+
+```json
+{ "path": "/catalog/42" }
+```
+
+## `review`
+
+Left a review on a product. `rating`, if given, must be an integer `1`..`5`.
+
+```dart
+await client.trackReview('SKU-123', rating: 5);
+```
+
+```json
+{ "item_id": "SKU-123", "rating": 5 }
+```
+
+> An out-of-range `rating` (e.g. `0` or `6`) is dropped from the payload, not
+> the whole event — matching the web shim, which sends `review` without the
+> invalid key rather than discarding the signal.
+
 ## Resilience
 
 Tracking is fire-and-forget. On any failure the call returns `Err` and logs via

@@ -162,6 +162,75 @@ void main() {
         isFalse,
       );
     });
+
+    test('trackVisit sends an empty payload', () async {
+      final (client, http, _) = await _client();
+      final res = await client.trackVisit(cityId: '7');
+
+      expect(res, isA<Ok<void>>());
+      final ev = (_lastPostBody(http, '/api/v1/events')['events'] as List)
+          .single as Map<String, Object?>;
+      expect(ev['type'], 'visit');
+      expect(ev['payload'], <String, Object?>{});
+    });
+
+    test('trackPageOpen strips query/hash before sending', () async {
+      final (client, http, _) = await _client();
+      final res = await client.trackPageOpen('/catalog/42?ref=x#top');
+
+      expect(res, isA<Ok<void>>());
+      final ev = (_lastPostBody(http, '/api/v1/events')['events'] as List)
+          .single as Map<String, Object?>;
+      expect(ev['type'], 'page_open');
+      expect(ev['payload'], {'path': '/catalog/42'});
+    });
+
+    test('trackPageOpen rejects a path that is empty after stripping query',
+        () async {
+      final (client, http, _) = await _client();
+
+      for (final path in const ['', '   ', '?ref=x', '#top']) {
+        final res = await client.trackPageOpen(path);
+        expect((res as Err).error, isA<ValidationError>());
+      }
+
+      expect(
+        http.requests.any((r) => r.url.path == '/api/v1/events'),
+        isFalse,
+      );
+    });
+
+    test('trackReview sends item_id and a valid rating', () async {
+      final (client, http, _) = await _client();
+      final res = await client.trackReview('SKU', rating: 5, cityId: '7');
+
+      expect(res, isA<Ok<void>>());
+      final ev = (_lastPostBody(http, '/api/v1/events')['events'] as List)
+          .single as Map<String, Object?>;
+      expect(ev['type'], 'review');
+      expect(ev['payload'], {'item_id': 'SKU', 'rating': 5});
+    });
+
+    test('trackReview without a rating omits the key', () async {
+      final (client, http, _) = await _client();
+      await client.trackReview('SKU');
+
+      final ev = (_lastPostBody(http, '/api/v1/events')['events'] as List)
+          .single as Map<String, Object?>;
+      expect(ev['payload'], {'item_id': 'SKU'});
+    });
+
+    test('trackReview drops an out-of-range rating but still sends the event',
+        () async {
+      final (client, http, _) = await _client();
+      final res = await client.trackReview('SKU', rating: 6);
+
+      expect(res, isA<Ok<void>>());
+      final ev = (_lastPostBody(http, '/api/v1/events')['events'] as List)
+          .single as Map<String, Object?>;
+      expect(ev['type'], 'review');
+      expect(ev['payload'], {'item_id': 'SKU'});
+    });
   });
 
   group('recommend / search / instant', () {

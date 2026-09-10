@@ -358,6 +358,55 @@ class Besh24Client {
     );
   }
 
+  /// Tracks a visit (session start). No product/page context — the base
+  /// event fields (`source`/`session_id`/`ts`) already carry everything
+  /// meaningful, so the payload is empty.
+  Future<Result<void>> trackVisit({String? cityId}) {
+    return track(TrackEventType.visit, const {}, cityId: cityId);
+  }
+
+  /// Tracks opening a page identified by [path].
+  ///
+  /// The server strips any query string/hash from `path` and rejects the
+  /// event if nothing is left afterwards, so the SDK normalizes locally and
+  /// rejects the same way *before* sending — an empty path is not wire
+  /// noise worth a round trip. Mirrors [trackRecommendationClick]'s local
+  /// validation.
+  Future<Result<void>> trackPageOpen(String path, {String? cityId}) {
+    _assertInitialized();
+    final normalized = path.trim().split(RegExp(r'[?#]')).first;
+    if (normalized.isEmpty) {
+      return Future.value(
+        const Err(ValidationError('page open requires a non-empty path')),
+      );
+    }
+    return track(
+      TrackEventType.pageOpen,
+      {'path': normalized},
+      cityId: cityId,
+    );
+  }
+
+  /// Tracks a review left on [itemId]. [rating], if given, must be an
+  /// integer 1..5 — matching the web shim, an out-of-range [rating] is
+  /// dropped from the payload rather than blocking the whole event, since
+  /// the review itself is still a real signal worth sending.
+  Future<Result<void>> trackReview(
+    String itemId, {
+    int? rating,
+    String? cityId,
+  }) {
+    final validRating = rating != null && rating >= 1 && rating <= 5;
+    return track(
+      TrackEventType.review,
+      {
+        'item_id': itemId,
+        if (validRating) 'rating': rating,
+      },
+      cityId: cityId,
+    );
+  }
+
   Map<String, Object?> _cartPayload(String itemId, num? amount, num? price) => {
         'item_id': itemId,
         if (amount != null) 'amount': amount,
