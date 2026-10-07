@@ -67,6 +67,15 @@ final ids = recs.valueOrNull?.itemIds ?? const [];
 final extended = await client.recommend('popular', limit: 8, extended: true);
 final product = extended.valueOrNull?.products?['SKU-123'];
 
+// Array context: cart items / several categories / the search query of the
+// current page (for `search_also_bought` blocks). Blank values are dropped.
+final alsoBought = await client.recommend(
+  'search_also_bought',
+  itemIds: ['SKU-1', 'SKU-2'], // alias: cartItemIds
+  categoryIds: ['10', '11'],
+  searchQuery: 'телефон',
+);
+
 // Batch — resolve several blocks (e.g. a whole page) in one round trip.
 final batch = await client.recommendBatch(
   const [
@@ -90,6 +99,15 @@ final narrowed = await client.search(
   'телефон',
   cityId: '1',
   paramFilters: {'Цвет': ['Чёрный']},
+);
+
+// Several brands / categories at once (merged with `brand`/`category`;
+// sent as a repeated query key).
+final multi = await client.search(
+  'телевизор',
+  cityId: '1',
+  brands: ['Samsung', 'LG'],
+  categories: ['15', '16'],
 );
 
 // Switch the runtime default language when the user changes locale — no
@@ -117,7 +135,7 @@ await client.unregisterPushToken(fcmToken);
 | `trackView` / `trackCategory` / `trackCart` / `trackRemoveFromCart` / `trackWish` / `trackRemoveWish` / `trackPurchase` / `trackSearch` | `POST /events` | Typed event helpers. |
 | `trackRecommendationClick({block, itemId})` | `POST /events` | Click on a product inside a recommendation block; empty `block`/`itemId` is rejected locally. |
 | `trackVisit()` | `POST /events` | Session start; no payload. |
-| `trackPageOpen(path)` | `POST /events` | Opened a page. `path` has any query string/hash stripped locally; a path that's empty after stripping is rejected locally. |
+| `trackPageOpen(path)` | `POST /events` | Opened a page. `path` is normalized locally (query/hash stripped, absolute URL reduced to its path); a path that's empty afterwards is rejected locally. Routes that carry secrets in the path (`reset-password`, `auth`, ...) are not reported, and `/smart-gifts/receive/<token>` is cut to `/smart-gifts/receive`. |
 | `trackReview(itemId, {rating})` | `POST /events` | Left a review. `rating` must be `1`..`5`; an out-of-range value is dropped from the payload but the event is still sent. |
 | `setProfile(input)` | `POST /profile` | Remembers `user_id`/`city_id`. |
 | `recommend(blockCode, …)` | `GET /recommendations` | `blockCode` → `besh24_block_id`. `extended: true` inlines catalog fields (price, availability, stock, ...) in `products`. |

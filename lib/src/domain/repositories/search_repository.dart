@@ -13,6 +13,8 @@ abstract interface class SearchRepository {
     String? userId,
     String? brand,
     String? category,
+    List<String>? brands,
+    List<String>? categories,
     int? page,
     int? perPage,
     int? priceMin,

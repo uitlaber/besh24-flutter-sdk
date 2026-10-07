@@ -12,6 +12,7 @@ import 'data/datasources/identity_local_data_source.dart';
 import 'data/repositories/identity_repository_impl.dart';
 import 'data/repositories/profile_repository_impl.dart';
 import 'data/repositories/push_token_repository_impl.dart';
+import 'core/page_path_rules.dart';
 import 'data/repositories/recommendation_repository_impl.dart';
 import 'data/repositories/search_repository_impl.dart';
 import 'data/repositories/subscription_repository_impl.dart';
@@ -374,15 +375,19 @@ class Besh24Client {
   /// validation.
   Future<Result<void>> trackPageOpen(String path, {String? cityId}) {
     _assertInitialized();
-    final normalized = path.trim().split(RegExp(r'[?#]')).first;
+    final normalized = normalizePagePath(path);
     if (normalized.isEmpty) {
       return Future.value(
         const Err(ValidationError('page open requires a non-empty path')),
       );
     }
+    final ruled = applyPagePathRules(normalized);
+    // Routes carrying secrets in the path are never reported (same table as
+    // the web shim): nothing is sent and the call succeeds silently.
+    if (ruled == null) return Future.value(const Ok(null));
     return track(
       TrackEventType.pageOpen,
-      {'path': normalized},
+      {'path': ruled},
       cityId: cityId,
     );
   }
@@ -447,6 +452,10 @@ class Besh24Client {
     String? itemId,
     String? categoryId,
     String? brand,
+    List<String>? itemIds,
+    List<String>? cartItemIds,
+    List<String>? categoryIds,
+    String? searchQuery,
     int? limit,
     bool extended = false,
   }) {
@@ -463,6 +472,9 @@ class Besh24Client {
           itemId: itemId,
           categoryId: categoryId,
           brand: brand,
+          itemIds: itemIds ?? cartItemIds,
+          categoryIds: categoryIds,
+          searchQuery: searchQuery,
           limit: limit,
           extended: extended,
         );
@@ -519,6 +531,8 @@ class Besh24Client {
     String? cityId,
     String? brand,
     String? category,
+    List<String>? brands,
+    List<String>? categories,
     int? page,
     int? perPage,
     int? priceMin,
@@ -539,6 +553,8 @@ class Besh24Client {
           userId: _userId,
           brand: brand,
           category: category,
+          brands: brands,
+          categories: categories,
           page: page,
           perPage: perPage,
           priceMin: priceMin,
