@@ -16,6 +16,7 @@ class RecommendationBlockRequest {
     this.brand,
     this.itemIds,
     this.categoryIds,
+    this.cartItemIds,
   });
 
   /// Block code (sent as `block_id`).
@@ -33,6 +34,9 @@ class RecommendationBlockRequest {
   /// Cart/basket item ids for co-purchase style blocks. Takes priority over
   /// [itemId] when both are set, matching the backend's contract.
   final List<String>? itemIds;
+
+  /// Alias of [itemIds] (used when [itemIds] is null).
+  final List<String>? cartItemIds;
 
   /// Category set for multi-category blocks (e.g. a catalog menu widget).
   /// Takes priority over [categoryId] when both are set.

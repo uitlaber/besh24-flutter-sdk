@@ -20,6 +20,9 @@ class GetRecommendations {
     String? itemId,
     String? categoryId,
     String? brand,
+    List<String>? itemIds,
+    List<String>? categoryIds,
+    String? searchQuery,
     int? limit,
     bool extended = false,
   }) {
@@ -32,6 +35,9 @@ class GetRecommendations {
       itemId: itemId,
       categoryId: categoryId,
       brand: brand,
+      itemIds: itemIds,
+      categoryIds: categoryIds,
+      searchQuery: searchQuery,
       limit: limit,
       extended: extended,
     );

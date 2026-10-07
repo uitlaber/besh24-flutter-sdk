@@ -20,6 +20,8 @@ class SearchRepositoryImpl implements SearchRepository {
     String? userId,
     String? brand,
     String? category,
+    List<String>? brands,
+    List<String>? categories,
     int? page,
     int? perPage,
     int? priceMin,
@@ -35,8 +37,6 @@ class SearchRepositoryImpl implements SearchRepository {
         'source': source,
         'anonymous_id': anonymousId,
         'user_id': userId,
-        'brand': brand,
-        'category': category,
         'page': page?.toString(),
         'per_page': perPage?.toString(),
         'price_min': priceMin?.toString(),
@@ -45,8 +45,23 @@ class SearchRepositoryImpl implements SearchRepository {
         'sort': sort,
       },
       paramFilters: paramFilters,
+      multiParams: {
+        'brand': _merge(brand, brands),
+        'category': _merge(category, categories),
+      },
     );
     return res.map((m) => m.toEntity());
+  }
+
+  /// Merges the single value and its plural alias into one list without
+  /// duplicates, dropping blanks (same semantics as the web shim).
+  static List<String> _merge(String? single, List<String>? many) {
+    final out = <String>[];
+    for (final v in [if (single != null) single, ...?many]) {
+      final t = v.trim();
+      if (t.isNotEmpty && !out.contains(t)) out.add(t);
+    }
+    return out;
   }
 
   @override

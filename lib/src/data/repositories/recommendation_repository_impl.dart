@@ -22,6 +22,9 @@ class RecommendationRepositoryImpl implements RecommendationRepository {
     String? itemId,
     String? categoryId,
     String? brand,
+    List<String>? itemIds,
+    List<String>? categoryIds,
+    String? searchQuery,
     int? limit,
     bool extended = false,
   }) async {
@@ -34,6 +37,10 @@ class RecommendationRepositoryImpl implements RecommendationRepository {
       'item_id': itemId,
       'category_id': categoryId,
       'brand': brand,
+      // Array context goes as comma-joined lists (the server splits them).
+      'cart_item_ids': _csv(itemIds),
+      'category_ids': _csv(categoryIds),
+      'search_query': _clean(searchQuery),
       'limit': limit?.toString(),
       if (extended) 'extended': 'true',
     });
@@ -63,14 +70,30 @@ class RecommendationRepositoryImpl implements RecommendationRepository {
     );
   }
 
+  static String? _clean(String? v) {
+    final t = v?.trim();
+    return (t == null || t.isEmpty) ? null : t;
+  }
+
+  static String? _csv(List<String>? ids) {
+    final list = _cleanList(ids);
+    return list.isEmpty ? null : list.join(',');
+  }
+
+  static List<String> _cleanList(List<String>? ids) => (ids ?? const [])
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList(growable: false);
+
   Map<String, Object?> _blockToJson(RecommendationBlockRequest b) => {
         'block_id': b.blockCode,
         if (b.itemId != null && b.itemId!.isNotEmpty) 'item_id': b.itemId,
         if (b.categoryId != null && b.categoryId!.isNotEmpty)
           'category_id': b.categoryId,
         if (b.brand != null && b.brand!.isNotEmpty) 'brand': b.brand,
-        if (b.itemIds != null && b.itemIds!.isNotEmpty) 'item_ids': b.itemIds,
-        if (b.categoryIds != null && b.categoryIds!.isNotEmpty)
-          'category_ids': b.categoryIds,
+        if (_cleanList(b.itemIds ?? b.cartItemIds).isNotEmpty)
+          'item_ids': _cleanList(b.itemIds ?? b.cartItemIds),
+        if (_cleanList(b.categoryIds).isNotEmpty)
+          'category_ids': _cleanList(b.categoryIds),
       };
 }

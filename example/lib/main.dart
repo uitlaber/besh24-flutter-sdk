@@ -49,7 +49,8 @@ class _HomePageState extends State<_HomePage> {
   Future<void> _bootstrap() async {
     // 1) init → GET /identity → persisted anon/session id.
     final identity = await _client.init(
-      Besh24Config(baseUrl: _baseUrl, siteKey: 'bsk_demo_9f3c1a2b', source: 'app'),
+      Besh24Config(
+          baseUrl: _baseUrl, siteKey: 'bsk_demo_9f3c1a2b', source: 'app'),
     );
     _append(
         'init → anon=${identity.anonymousId} session=${identity.sessionId}');

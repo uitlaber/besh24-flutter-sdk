@@ -4,6 +4,27 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.9.0 — 2026-10-07
+
+### Added
+- `recommend`: array context `itemIds` (alias `cartItemIds`), `categoryIds`
+  and `searchQuery` (for `search_also_bought` blocks). Arrays are sent as
+  comma-joined lists; blank values are dropped and nothing is sent for an
+  empty list. `RecommendationBlockRequest` gains the `cartItemIds` alias and
+  `recommendBatch` now drops blank ids from `itemIds`/`categoryIds`.
+- `search`: multi-value `brands` and `categories`. They are merged with the
+  single `brand`/`category` (no duplicates, blanks dropped); several values
+  are sent as a repeated query key, one value as a plain scalar. Existing
+  `brand`/`category` calls are unchanged.
+
+### Changed
+- `trackPageOpen` now follows the same route rule table as the web SDK: the
+  path is normalized (absolute URL reduced to its path, query/hash cut,
+  repeated slashes collapsed, leading `/` ensured); routes carrying secrets
+  (`reset-password`, `auth`, ... as a path segment) are not reported at all
+  — the call returns `Ok` without a request; `/smart-gifts/receive/<token>`
+  is cut to `/smart-gifts/receive`.
+
 ## 0.8.0 — 2026-09-10
 
 ### Added

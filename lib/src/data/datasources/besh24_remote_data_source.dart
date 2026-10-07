@@ -86,8 +86,10 @@ class Besh24RemoteDataSource {
   Future<Result<RecommendationResultModel>> getRecommendations(
     Map<String, String?> params,
   ) async {
-    final res =
-        await _http.get(_uri('/recommendations', params), headers: _headers());
+    final res = await _http.get(
+      _uri('/recommendations', params),
+      headers: _headers(),
+    );
     return _decode(res, (json) => RecommendationResultModel.fromJson(json));
   }
 
@@ -112,8 +114,15 @@ class Besh24RemoteDataSource {
   Future<Result<SearchResultModel>> getSearch(
     Map<String, String?> params, {
     Map<String, List<String>>? paramFilters,
+    Map<String, List<String>>? multiParams,
   }) async {
     final query = <String, Object?>{...params};
+    // One value goes as a scalar, several as a repeated key (never joined by
+    // a comma: values may contain commas themselves).
+    multiParams?.forEach((key, values) {
+      if (values.isEmpty) return;
+      query[key] = values.length == 1 ? values.first : values;
+    });
     if (paramFilters != null) {
       for (final entry in paramFilters.entries) {
         final values =
@@ -130,8 +139,10 @@ class Besh24RemoteDataSource {
   Future<Result<List<InstantSearchItemModel>>> getInstant(
     Map<String, String?> params,
   ) async {
-    final res =
-        await _http.get(_uri('/search/instant', params), headers: _headers());
+    final res = await _http.get(
+      _uri('/search/instant', params),
+      headers: _headers(),
+    );
     return _decodeList(
       res,
       'products',
@@ -178,9 +189,7 @@ class Besh24RemoteDataSource {
         if (v.isNotEmpty) params[k] = v;
       }
     });
-    return base.replace(
-      queryParameters: {...base.queryParameters, ...params},
-    );
+    return base.replace(queryParameters: {...base.queryParameters, ...params});
   }
 
   String? _cookieHeader(String? anonymousId, String? sessionId) {

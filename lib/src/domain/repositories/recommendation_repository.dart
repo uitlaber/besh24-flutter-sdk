@@ -17,6 +17,9 @@ abstract interface class RecommendationRepository {
     String? itemId,
     String? categoryId,
     String? brand,
+    List<String>? itemIds,
+    List<String>? categoryIds,
+    String? searchQuery,
     int? limit,
     bool extended = false,
   });
