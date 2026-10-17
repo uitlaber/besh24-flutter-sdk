@@ -4,6 +4,23 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.10.0 — 2026-10-17
+
+### Added
+- Five checkout tracking events (parity with the web shim, J2 contract):
+  `TrackEventType.checkoutStart` / `checkoutStep` / `checkoutError` /
+  `paymentError` / `outOfStockOnAdd` (wire `checkout_start`, `checkout_step`,
+  `checkout_error`, `payment_error`, `out_of_stock_on_add`) and typed methods
+  `trackCheckoutStart({itemsCount, cartTotal})`,
+  `trackCheckoutStep(step, {stepIndex})`,
+  `trackCheckoutError({step, code, message})`,
+  `trackPaymentError({orderId, method, code})`,
+  `trackOutOfStockOnAdd(itemId, {price})`.
+  Payload is a strict whitelist: strings trimmed and capped (64; `message` and
+  `order_id`/`item_id` 200), numbers must be non-negative (invalid ones are
+  dropped), no PII is accepted. `step` and `itemId` are required — an empty
+  value returns `Err(ValidationError)` without a request.
+
 ## 0.9.0 — 2026-10-07
 
 ### Added

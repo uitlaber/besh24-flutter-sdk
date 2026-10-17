@@ -163,6 +163,145 @@ void main() {
       );
     });
 
+    group('checkout events', () {
+      Future<Map<String, Object?>> lastEvent(RecordingHttpClient http) async =>
+          (_lastPostBody(http, '/api/v1/events')['events'] as List).single
+              as Map<String, Object?>;
+
+      Future<void> expectNoEvents(RecordingHttpClient http) async {
+        expect(
+          http.requests.any((r) => r.url.path == '/api/v1/events'),
+          isFalse,
+        );
+      }
+
+      test('checkout_start: valid payload', () async {
+        final (client, http, _) = await _client();
+        final res =
+            await client.trackCheckoutStart(itemsCount: 3, cartTotal: 1990.5);
+        expect(res, isA<Ok<void>>());
+        final ev = await lastEvent(http);
+        expect(ev['type'], 'checkout_start');
+        expect(ev['payload'], {'items_count': 3, 'cart_total': 1990.5});
+      });
+
+      test('checkout_start: negative values dropped, empty payload sent',
+          () async {
+        final (client, http, _) = await _client();
+        final res =
+            await client.trackCheckoutStart(itemsCount: -1, cartTotal: -5);
+        expect(res, isA<Ok<void>>());
+        final ev = await lastEvent(http);
+        expect(ev['type'], 'checkout_start');
+        expect(ev['payload'], <String, Object?>{});
+      });
+
+      test('checkout_step: trims and caps step at 64, adds step_index',
+          () async {
+        final (client, http, _) = await _client();
+        final res =
+            await client.trackCheckoutStep('  ${'a' * 80}  ', stepIndex: 2);
+        expect(res, isA<Ok<void>>());
+        final ev = await lastEvent(http);
+        expect(ev['type'], 'checkout_step');
+        expect(ev['payload'], {'step': 'a' * 64, 'step_index': 2});
+      });
+
+      test('checkout_step: empty step rejected locally', () async {
+        final (client, http, _) = await _client();
+        for (final step in const ['', '   ']) {
+          final res = await client.trackCheckoutStep(step);
+          expect((res as Err).error, isA<ValidationError>());
+        }
+        await expectNoEvents(http);
+      });
+
+      test('checkout_error: slices fields by limits, drops blanks', () async {
+        final (client, http, _) = await _client();
+        final res = await client.trackCheckoutError(
+          step: ' payment ',
+          code: 'c' * 100,
+          message: 'm' * 300,
+        );
+        expect(res, isA<Ok<void>>());
+        final ev = await lastEvent(http);
+        expect(ev['type'], 'checkout_error');
+        expect(
+          ev['payload'],
+          {'step': 'payment', 'code': 'c' * 64, 'message': 'm' * 200},
+        );
+      });
+
+      test('checkout_error: all-empty gives empty payload', () async {
+        final (client, http, _) = await _client();
+        await client.trackCheckoutError(step: ' ', code: '');
+        final ev = await lastEvent(http);
+        expect(ev['payload'], <String, Object?>{});
+      });
+
+      test('payment_error: slices fields by limits', () async {
+        final (client, http, _) = await _client();
+        final res = await client.trackPaymentError(
+          orderId: ' ${'o' * 250}',
+          method: ' card ',
+          code: 'x' * 70,
+        );
+        expect(res, isA<Ok<void>>());
+        final ev = await lastEvent(http);
+        expect(ev['type'], 'payment_error');
+        expect(
+          ev['payload'],
+          {'order_id': 'o' * 200, 'method': 'card', 'code': 'x' * 64},
+        );
+      });
+
+      test('payment_error: all-empty gives empty payload', () async {
+        final (client, http, _) = await _client();
+        await client.trackPaymentError(orderId: '  ');
+        final ev = await lastEvent(http);
+        expect(ev['type'], 'payment_error');
+        expect(ev['payload'], <String, Object?>{});
+      });
+
+      test('out_of_stock_on_add: valid payload with price', () async {
+        final (client, http, _) = await _client();
+        final res = await client.trackOutOfStockOnAdd(' SKU-1 ', price: 990);
+        expect(res, isA<Ok<void>>());
+        final ev = await lastEvent(http);
+        expect(ev['type'], 'out_of_stock_on_add');
+        expect(ev['payload'], {'item_id': 'SKU-1', 'price': 990});
+      });
+
+      test('out_of_stock_on_add: negative price dropped', () async {
+        final (client, http, _) = await _client();
+        await client.trackOutOfStockOnAdd('SKU-1', price: -1);
+        final ev = await lastEvent(http);
+        expect(ev['payload'], {'item_id': 'SKU-1'});
+      });
+
+      test('out_of_stock_on_add: empty item id rejected locally', () async {
+        final (client, http, _) = await _client();
+        for (final id in const ['', '  ']) {
+          final res = await client.trackOutOfStockOnAdd(id);
+          expect((res as Err).error, isA<ValidationError>());
+        }
+        await expectNoEvents(http);
+      });
+
+      test('wire names round-trip', () {
+        for (final (t, w) in const [
+          (TrackEventType.checkoutStart, 'checkout_start'),
+          (TrackEventType.checkoutStep, 'checkout_step'),
+          (TrackEventType.checkoutError, 'checkout_error'),
+          (TrackEventType.paymentError, 'payment_error'),
+          (TrackEventType.outOfStockOnAdd, 'out_of_stock_on_add'),
+        ]) {
+          expect(t.wire, w);
+          expect(TrackEventType.fromWire(w), t);
+        }
+      });
+    });
+
     test('trackVisit sends an empty payload', () async {
       final (client, http, _) = await _client();
       final res = await client.trackVisit(cityId: '7');

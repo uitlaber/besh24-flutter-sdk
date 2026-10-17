@@ -412,6 +412,124 @@ class Besh24Client {
     );
   }
 
+  // --- checkout events (J2) ---------------------------------------------
+  //
+  // Payload is a strict whitelist, same as the web shim: strings are trimmed
+  // and capped (64 / 200), numbers must be non-negative, unknown fields are
+  // never accepted, and no PII (email/phone/address/name) is ever sent.
+
+  /// Tracks the start of checkout. [itemsCount] and [cartTotal] are optional
+  /// and dropped when negative (or non-finite).
+  Future<Result<void>> trackCheckoutStart({
+    int? itemsCount,
+    num? cartTotal,
+    String? cityId,
+  }) {
+    return track(
+      TrackEventType.checkoutStart,
+      {
+        if (itemsCount != null && itemsCount >= 0) 'items_count': itemsCount,
+        if (_nonNeg(cartTotal) != null) 'cart_total': cartTotal,
+      },
+      cityId: cityId,
+    );
+  }
+
+  /// Tracks moving to checkout [step] (free-form, 1..64 chars after trim).
+  /// An empty [step] is rejected locally with a [ValidationError].
+  Future<Result<void>> trackCheckoutStep(
+    String step, {
+    int? stepIndex,
+    String? cityId,
+  }) {
+    _assertInitialized();
+    final name = _cleanStr(step, 64);
+    if (name == null) {
+      return Future.value(
+        const Err(ValidationError('checkout step requires a non-empty step')),
+      );
+    }
+    return track(
+      TrackEventType.checkoutStep,
+      {'step': name, if (stepIndex != null) 'step_index': stepIndex},
+      cityId: cityId,
+    );
+  }
+
+  /// Tracks a checkout error. All fields optional; [message] is capped at 200
+  /// chars, [step]/[code] at 64. Never put user-entered values in [message].
+  Future<Result<void>> trackCheckoutError({
+    String? step,
+    String? code,
+    String? message,
+    String? cityId,
+  }) {
+    final s = _cleanStr(step, 64);
+    final c = _cleanStr(code, 64);
+    final m = _cleanStr(message, 200);
+    return track(
+      TrackEventType.checkoutError,
+      {
+        if (s != null) 'step': s,
+        if (c != null) 'code': c,
+        if (m != null) 'message': m,
+      },
+      cityId: cityId,
+    );
+  }
+
+  /// Tracks a payment error. All fields optional; [orderId] capped at 200,
+  /// [method]/[code] at 64.
+  Future<Result<void>> trackPaymentError({
+    String? orderId,
+    String? method,
+    String? code,
+    String? cityId,
+  }) {
+    final o = _cleanStr(orderId, 200);
+    final m = _cleanStr(method, 64);
+    final c = _cleanStr(code, 64);
+    return track(
+      TrackEventType.paymentError,
+      {
+        if (o != null) 'order_id': o,
+        if (m != null) 'method': m,
+        if (c != null) 'code': c,
+      },
+      cityId: cityId,
+    );
+  }
+
+  /// Tracks an attempt to add [itemId] to the cart when it is out of stock
+  /// (in addition to, not instead of, [trackCart]). An empty [itemId] is
+  /// rejected locally with a [ValidationError]; a negative [price] is dropped.
+  Future<Result<void>> trackOutOfStockOnAdd(
+    String itemId, {
+    num? price,
+    String? cityId,
+  }) {
+    _assertInitialized();
+    final id = _cleanStr(itemId, 200);
+    if (id == null) {
+      return Future.value(
+        const Err(ValidationError('out of stock event requires an item id')),
+      );
+    }
+    return track(
+      TrackEventType.outOfStockOnAdd,
+      {'item_id': id, if (_nonNeg(price) != null) 'price': price},
+      cityId: cityId,
+    );
+  }
+
+  static String? _cleanStr(String? v, int max) {
+    final t = v?.trim() ?? '';
+    if (t.isEmpty) return null;
+    return t.length > max ? t.substring(0, max) : t;
+  }
+
+  static num? _nonNeg(num? v) => v != null && v.isFinite && v >= 0 ? v : null;
+
   Map<String, Object?> _cartPayload(String itemId, num? amount, num? price) => {
         'item_id': itemId,
         if (amount != null) 'amount': amount,
