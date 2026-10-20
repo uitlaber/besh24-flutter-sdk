@@ -522,6 +522,56 @@ class Besh24Client {
     );
   }
 
+  /// Tracks filters applied on a category listing. [categoryId] is required
+  /// (empty → [ValidationError], no request). [filters] maps a parameter name
+  /// to its values: names/values are trimmed and capped at 64 chars, blanks
+  /// and the reserved names `__proto__`/`constructor`/`prototype` are dropped,
+  /// at most 20 parameters and 20 values each. An empty map is valid (reset).
+  /// Negative/non-finite [priceFrom]/[priceTo] and blank [sort] are dropped.
+  Future<Result<void>> trackCategoryFilter(
+    String categoryId, {
+    Map<String, List<String>> filters = const {},
+    num? priceFrom,
+    num? priceTo,
+    String? sort,
+    String? cityId,
+  }) {
+    _assertInitialized();
+    final cat = _cleanStr(categoryId, 64);
+    if (cat == null) {
+      return Future.value(
+        const Err(ValidationError('category filter requires a category id')),
+      );
+    }
+    const reserved = {'__proto__', 'constructor', 'prototype'};
+    final out = <String, List<String>>{};
+    for (final entry in filters.entries) {
+      if (out.length >= 20) break;
+      final name = _cleanStr(entry.key, 64);
+      if (name == null || reserved.contains(name)) continue;
+      final vals = <String>[];
+      for (final v in entry.value) {
+        if (vals.length >= 20) break;
+        final c = _cleanStr(v, 64);
+        if (c != null) vals.add(c);
+      }
+      if (vals.isEmpty) continue;
+      out[name] = vals;
+    }
+    final s = _cleanStr(sort, 64);
+    return track(
+      TrackEventType.categoryFilter,
+      {
+        'category_id': cat,
+        'filters': out,
+        if (_nonNeg(priceFrom) != null) 'price_from': priceFrom,
+        if (_nonNeg(priceTo) != null) 'price_to': priceTo,
+        if (s != null) 'sort': s,
+      },
+      cityId: cityId,
+    );
+  }
+
   static String? _cleanStr(String? v, int max) {
     final t = v?.trim() ?? '';
     if (t.isEmpty) return null;

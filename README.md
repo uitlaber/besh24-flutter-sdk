@@ -142,6 +142,7 @@ await client.unregisterPushToken(fcmToken);
 | `trackCheckoutError({step, code, message})` | `POST /events` | Checkout error; `step`/`code` ≤64, `message` ≤200. Don't put user-entered data in `message`. |
 | `trackPaymentError({orderId, method, code})` | `POST /events` | Payment error; `orderId` ≤200, `method`/`code` ≤64. |
 | `trackOutOfStockOnAdd(itemId, {price})` | `POST /events` | Tried to add an out-of-stock product (in addition to, not instead of, `trackCart`). Empty `itemId` is rejected locally. |
+| `trackCategoryFilter(categoryId, {filters, priceFrom, priceTo, sort})` | `POST /events` | Filters applied on a category listing. `filters`: name → values (≤20 × ≤20, ≤64 chars, reserved names dropped); empty map = reset. Empty `categoryId` is rejected locally. |
 | `setProfile(input)` | `POST /profile` | Remembers `user_id`/`city_id`. |
 | `recommend(blockCode, …)` | `GET /recommendations` | `blockCode` → `besh24_block_id`. `extended: true` inlines catalog fields (price, availability, stock, ...) in `products`. |
 | `recommendBatch(blocks, …)` | `POST /recommendations/batch` | N blocks in one round trip; results keyed by block code. |

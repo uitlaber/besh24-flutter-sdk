@@ -288,6 +288,115 @@ void main() {
         await expectNoEvents(http);
       });
 
+      group('category_filter', () {
+        test('valid payload', () async {
+          final (client, http, _) = await _client();
+          final res = await client.trackCategoryFilter(
+            ' 12 ',
+            filters: {
+              'brand': ['Apple', ' Samsung ', ''],
+              ' ': ['x'],
+              'empty': ['', ' '],
+            },
+            priceFrom: 100,
+            priceTo: 500.5,
+            sort: ' price_asc ',
+          );
+          expect(res, isA<Ok<void>>());
+          final ev = await lastEvent(http);
+          expect(ev['type'], 'category_filter');
+          expect(ev['payload'], {
+            'category_id': '12',
+            'filters': {
+              'brand': ['Apple', 'Samsung'],
+            },
+            'price_from': 100,
+            'price_to': 500.5,
+            'sort': 'price_asc',
+          });
+        });
+
+        test('empty filters is a valid reset', () async {
+          final (client, http, _) = await _client();
+          final res = await client.trackCategoryFilter('12');
+          expect(res, isA<Ok<void>>());
+          final ev = await lastEvent(http);
+          expect(ev['payload'], {'category_id': '12', 'filters': {}});
+        });
+
+        test('limits: 20 params and 20 values', () async {
+          final (client, http, _) = await _client();
+          await client.trackCategoryFilter(
+            '12',
+            filters: {
+              for (var i = 0; i < 30; i++)
+                'p$i': [for (var j = 0; j < 30; j++) 'v$j'],
+            },
+          );
+          final f =
+              ((await lastEvent(http))['payload'] as Map)['filters'] as Map;
+          expect(f.length, 20);
+          expect((f['p0'] as List).length, 20);
+        });
+
+        test('caps name/value/sort/category at 64', () async {
+          final (client, http, _) = await _client();
+          final long = 'a' * 100;
+          await client.trackCategoryFilter(
+            long,
+            filters: {
+              long: [long],
+            },
+            sort: long,
+          );
+          final p = (await lastEvent(http))['payload'] as Map;
+          final short = 'a' * 64;
+          expect(p['category_id'], short);
+          expect(p['filters'], {
+            short: [short],
+          });
+          expect(p['sort'], short);
+        });
+
+        test('reserved names dropped', () async {
+          final (client, http, _) = await _client();
+          await client.trackCategoryFilter(
+            '12',
+            filters: {
+              '__proto__': ['x'],
+              'constructor': ['x'],
+              'prototype': ['x'],
+              'ok': ['y'],
+            },
+          );
+          final p = (await lastEvent(http))['payload'] as Map;
+          expect(p['filters'], {
+            'ok': ['y'],
+          });
+        });
+
+        test('negative/non-finite prices and blank sort dropped', () async {
+          final (client, http, _) = await _client();
+          await client.trackCategoryFilter(
+            '12',
+            priceFrom: -1,
+            priceTo: double.infinity,
+            sort: '  ',
+          );
+          final p = (await lastEvent(http))['payload'] as Map;
+          expect(p, {'category_id': '12', 'filters': {}});
+        });
+
+        test('empty category id rejected locally', () async {
+          final (client, http, _) = await _client();
+          for (final id in const ['', '  ']) {
+            final res = await client.trackCategoryFilter(id);
+            expect((res as Err).error, isA<ValidationError>());
+          }
+          await expectNoEvents(http);
+        });
+      });
+
       test('wire names round-trip', () {
         for (final (t, w) in const [
           (TrackEventType.checkoutStart, 'checkout_start'),
@@ -295,6 +404,7 @@ void main() {
           (TrackEventType.checkoutError, 'checkout_error'),
           (TrackEventType.paymentError, 'payment_error'),
           (TrackEventType.outOfStockOnAdd, 'out_of_stock_on_add'),
+          (TrackEventType.categoryFilter, 'category_filter'),
         ]) {
           expect(t.wire, w);
           expect(TrackEventType.fromWire(w), t);

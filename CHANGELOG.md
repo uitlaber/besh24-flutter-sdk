@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.11.0 — 2026-10-20
+
+### Added
+- `category_filter` tracking event (parity with the web shim):
+  `TrackEventType.categoryFilter` (wire `category_filter`) and
+  `trackCategoryFilter(categoryId, {filters, priceFrom, priceTo, sort})`.
+  `categoryId` is required (empty → `Err(ValidationError)` without a request).
+  `filters` is name → values: strings trimmed and capped at 64, blanks and the
+  reserved names `__proto__`/`constructor`/`prototype` dropped, at most 20
+  parameters and 20 values each; an empty map is valid (filter reset).
+  Negative/non-finite prices and a blank `sort` are dropped. No PII.
+
 ## 0.10.0 — 2026-10-17
 
 ### Added

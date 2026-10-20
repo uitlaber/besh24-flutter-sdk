@@ -52,7 +52,10 @@ enum TrackEventType {
   paymentError,
 
   /// Tried to add a product to the cart but it is out of stock.
-  outOfStockOnAdd;
+  outOfStockOnAdd,
+
+  /// Applied filters/price/sort on a category listing.
+  categoryFilter;
 
   /// The wire value sent in the event `type` field (snake_case).
   String get wire => switch (this) {
@@ -73,6 +76,7 @@ enum TrackEventType {
         TrackEventType.checkoutError => 'checkout_error',
         TrackEventType.paymentError => 'payment_error',
         TrackEventType.outOfStockOnAdd => 'out_of_stock_on_add',
+        TrackEventType.categoryFilter => 'category_filter',
       };
 
   /// Parses a wire [value] into a [TrackEventType], or `null` if unknown.
