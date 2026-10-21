@@ -37,7 +37,25 @@ enum TrackEventType {
   pageOpen,
 
   /// Left a review for a product.
-  review;
+  review,
+
+  /// Started checkout.
+  checkoutStart,
+
+  /// Moved to a checkout step.
+  checkoutStep,
+
+  /// Checkout failed (validation/server error on a step).
+  checkoutError,
+
+  /// Payment failed.
+  paymentError,
+
+  /// Tried to add a product to the cart but it is out of stock.
+  outOfStockOnAdd,
+
+  /// Applied filters/price/sort on a category listing.
+  categoryFilter;
 
   /// The wire value sent in the event `type` field (snake_case).
   String get wire => switch (this) {
@@ -53,6 +71,12 @@ enum TrackEventType {
         TrackEventType.visit => 'visit',
         TrackEventType.pageOpen => 'page_open',
         TrackEventType.review => 'review',
+        TrackEventType.checkoutStart => 'checkout_start',
+        TrackEventType.checkoutStep => 'checkout_step',
+        TrackEventType.checkoutError => 'checkout_error',
+        TrackEventType.paymentError => 'payment_error',
+        TrackEventType.outOfStockOnAdd => 'out_of_stock_on_add',
+        TrackEventType.categoryFilter => 'category_filter',
       };
 
   /// Parses a wire [value] into a [TrackEventType], or `null` if unknown.

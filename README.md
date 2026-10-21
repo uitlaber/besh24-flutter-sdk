@@ -137,6 +137,12 @@ await client.unregisterPushToken(fcmToken);
 | `trackVisit()` | `POST /events` | Session start; no payload. |
 | `trackPageOpen(path)` | `POST /events` | Opened a page. `path` is normalized locally (query/hash stripped, absolute URL reduced to its path); a path that's empty afterwards is rejected locally. Routes that carry secrets in the path (`reset-password`, `auth`, ...) are not reported, and `/smart-gifts/receive/<token>` is cut to `/smart-gifts/receive`. |
 | `trackReview(itemId, {rating})` | `POST /events` | Left a review. `rating` must be `1`..`5`; an out-of-range value is dropped from the payload but the event is still sent. |
+| `trackCheckoutStart({itemsCount, cartTotal})` | `POST /events` | Checkout started. Negative numbers are dropped. |
+| `trackCheckoutStep(step, {stepIndex})` | `POST /events` | Moved to a checkout step (free-form, ≤64 chars). Empty `step` is rejected locally. |
+| `trackCheckoutError({step, code, message})` | `POST /events` | Checkout error; `step`/`code` ≤64, `message` ≤200. Don't put user-entered data in `message`. |
+| `trackPaymentError({orderId, method, code})` | `POST /events` | Payment error; `orderId` ≤200, `method`/`code` ≤64. |
+| `trackOutOfStockOnAdd(itemId, {price})` | `POST /events` | Tried to add an out-of-stock product (in addition to, not instead of, `trackCart`). Empty `itemId` is rejected locally. |
+| `trackCategoryFilter(categoryId, {filters, priceFrom, priceTo, sort})` | `POST /events` | Filters applied on a category listing. `filters`: name → values (≤20 × ≤20, ≤64 chars, reserved names dropped); empty map = reset. Empty `categoryId` is rejected locally. |
 | `setProfile(input)` | `POST /profile` | Remembers `user_id`/`city_id`. |
 | `recommend(blockCode, …)` | `GET /recommendations` | `blockCode` → `besh24_block_id`. `extended: true` inlines catalog fields (price, availability, stock, ...) in `products`. |
 | `recommendBatch(blocks, …)` | `POST /recommendations/batch` | N blocks in one round trip; results keyed by block code. |
